@@ -1,172 +1,285 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  FileText,
+  Home,
   Calendar,
+  Radio,
+  FolderOpen,
   Users,
-  Search,
+  UserCheck,
+  Target,
+  Car,
+  Briefcase,
+  AlertTriangle,
+  Scale,
+  Building,
   Settings,
+  Database,
+  LogOut,
   Bell,
   ChevronLeft,
+  ChevronRight,
   Shield,
-  Activity,
+  LucideIcon,
 } from 'lucide-react';
 
-const menuItems = [
-  {
-    name: 'Tableau de bord',
-    icon: LayoutDashboard,
-    href: '/',
-    badge: null,
-  },
-  {
-    name: 'Rapports',
-    icon: FileText,
-    href: '/rapports',
-    badge: '12',
-  },
-  {
-    name: 'Planification',
-    icon: Calendar,
-    href: '/planification',
-    badge: null,
-  },
-  {
-    name: 'Personnel',
-    icon: Users,
-    href: '/personnel',
-    badge: null,
-  },
-  {
-    name: 'Recherche',
-    icon: Search,
-    href: '/recherche',
-    badge: null,
-  },
-  {
-    name: 'Activité',
-    icon: Activity,
-    href: '/activite',
-    badge: '3',
-  },
+interface NavItem {
+  name: string;
+  icon: LucideIcon;
+  href: string;
+  badge?: string | null;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+// Navigation principale
+const mainNavItems: NavItem[] = [
+  { name: 'Accueil', icon: Home, href: '/dashboard', badge: null },
+  { name: 'Événements', icon: Calendar, href: '/dashboard/events', badge: null },
 ];
 
-export default function Sidebar() {
+// Section Patrouille
+const patrolSection: NavItem[] = [
+  { name: 'Dispatch', icon: Radio, href: '/dashboard/dispatch', badge: null },
+  { name: 'Mes dossiers en cours', icon: FolderOpen, href: '/dashboard/active-cases', badge: '3' },
+];
+
+// Section Dossiers
+const dossierSection: NavItem[] = [
+  { name: 'Agents', icon: Users, href: '/dashboard/agents', badge: null },
+  { name: 'Citoyens', icon: UserCheck, href: '/dashboard/citizens', badge: null },
+  { name: 'Mandats d\'arrêt', icon: Target, href: '/dashboard/warrants', badge: null },
+  { name: 'Véhicules de service', icon: Car, href: '/dashboard/vehicles', badge: null },
+  { name: 'Équipements', icon: Briefcase, href: '/dashboard/equipment', badge: null },
+  { name: 'Plaintes', icon: AlertTriangle, href: '/dashboard/complaints', badge: '7' },
+  { name: 'Convocations', icon: Scale, href: '/dashboard/summons', badge: '12' },
+  { name: 'Unités', icon: Building, href: '/dashboard/units', badge: null },
+  { name: 'Divisions', icon: Building, href: '/dashboard/divisions', badge: null },
+  { name: 'Paramètres', icon: Settings, href: '/dashboard/settings', badge: null },
+  { name: 'Logs', icon: Database, href: '/dashboard/logs', badge: null },
+  { name: 'Cache Demo', icon: Database, href: '/dashboard/cache-demo', badge: null },
+];
+
+// Section Administration (vide pour le moment)
+const adminSection: NavItem[] = [];
+
+const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-in-out z-50 ${
-        isCollapsed ? 'w-20' : 'w-72'
+      className={`fixed left-0 top-0 h-screen bg-dark-300 border-r border-gray-700 flex flex-col transition-all duration-300 z-50 ${
+        isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Glass background */}
-      <div className="h-full glass-strong border-r border-white/10 flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-police-blue to-accent-purple flex items-center justify-center glow-blue">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              {!isCollapsed && (
-                <div>
-                  <h1 className="text-xl font-bold text-gradient-blue">OlympusMDT</h1>
-                  <p className="text-xs text-dark-400">v2.0.1</p>
-                </div>
-              )}
-            </div>
+      {/* Logo/Header */}
+      <div className="p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center w-full' : ''}`}>
+            <button className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center hover:bg-primary-700 transition-colors">
+              <Shield className="w-6 h-6 text-white" />
+            </button>
             {!isCollapsed && (
-              <button
-                onClick={() => setIsCollapsed(true)}
-                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
+              <div>
+                <h1 className="text-sm font-bold text-gray-100">SASP - Olympus RP</h1>
+                <p className="text-xs text-gray-400">Mobile Data Terminal</p>
+              </div>
             )}
           </div>
+          {!isCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-2 text-gray-400 hover:text-gray-100 hover:bg-gray-700 rounded-md transition-colors"
+              aria-label="Collapse sidebar"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+      {/* Navigation Items */}
+      <nav className="flex-1 py-4 px-3 overflow-y-auto">
+        {/* Navigation Principale */}
+        {!isCollapsed && (
+          <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Navigation Principale
+          </p>
+        )}
+        <ul className="space-y-1 mb-6">
+          {mainNavItems.map((item) => {
             const isActive = pathname === item.href;
+            const Icon = item.icon;
 
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`
-                  group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
-                  ${isCollapsed ? 'justify-center' : ''}
-                  ${
-                    isActive
-                      ? 'glass-strong glow-blue text-white'
-                      : 'hover:glass text-dark-300 hover:text-white'
-                  }
-                `}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-police-blue-light' : ''}`} />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 font-medium">{item.name}</span>
-                    {item.badge && (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-lg bg-accent-red text-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
-                )}
-              </Link>
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors duration-200
+                    ${isCollapsed ? 'justify-center' : ''}
+                    ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-400 hover:bg-dark-100 hover:text-gray-100'
+                    }
+                  `}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.name}</span>
+                      {item.badge && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-error-600 text-white rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Link>
+              </li>
             );
           })}
-        </nav>
+        </ul>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10 space-y-2">
-          <Link
-            href="/notifications"
-            className={`
-              flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
-              ${isCollapsed ? 'justify-center' : ''}
-              hover:glass text-dark-300 hover:text-white
-            `}
-          >
-            <Bell className="w-5 h-5" />
-            {!isCollapsed && <span className="flex-1 font-medium">Notifications</span>}
-            {!isCollapsed && (
-              <span className="w-2 h-2 rounded-full bg-accent-red animate-pulse"></span>
-            )}
-          </Link>
+        {/* Section Patrouille */}
+        {!isCollapsed && (
+          <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Patrouille
+          </p>
+        )}
+        <ul className="space-y-1 mb-6">
+          {patrolSection.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
 
-          <Link
-            href="/parametres"
-            className={`
-              flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
-              ${isCollapsed ? 'justify-center' : ''}
-              hover:glass text-dark-300 hover:text-white
-            `}
-          >
-            <Settings className="w-5 h-5" />
-            {!isCollapsed && <span className="flex-1 font-medium">Paramètres</span>}
-          </Link>
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors duration-200
+                    ${isCollapsed ? 'justify-center' : ''}
+                    ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-400 hover:bg-dark-100 hover:text-gray-100'
+                    }
+                  `}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.name}</span>
+                      {item.badge && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-error-600 text-white rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
 
-          {isCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="w-full p-3 rounded-xl hover:glass transition-all duration-200"
-            >
-              <ChevronLeft className="w-5 h-5 rotate-180 mx-auto" />
-            </button>
+        {/* Section Dossiers */}
+        {!isCollapsed && (
+          <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Dossiers
+          </p>
+        )}
+        <ul className="space-y-1">
+          {dossierSection.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors duration-200
+                    ${isCollapsed ? 'justify-center' : ''}
+                    ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-400 hover:bg-dark-100 hover:text-gray-100'
+                    }
+                  `}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.name}</span>
+                      {item.badge && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-error-600 text-white rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-gray-700">
+        {/* Déconnexion */}
+        <button
+          className={`w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-red-600/10 hover:text-red-400 transition-colors ${
+            isCollapsed ? 'justify-center' : ''
+          }`}
+          title={isCollapsed ? 'Déconnexion' : undefined}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && <span className="flex-1 text-left">Déconnexion</span>}
+        </button>
+
+        {/* Indicateur temps réel et version */}
+        <div className="p-4">
+          {isCollapsed ? (
+            <>
+              <div className="flex justify-center mb-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Temps réel actif" />
+              </div>
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="w-full p-3 text-gray-400 hover:text-gray-100 hover:bg-gray-700 rounded-lg transition-colors"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-5 h-5 mx-auto" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-gray-400">Temps réel</span>
+                </div>
+                <span className="text-xs text-gray-500 font-mono">v 0.18.6</span>
+              </div>
+            </>
           )}
         </div>
       </div>
     </aside>
   );
-}
+};
+
+export default Sidebar;

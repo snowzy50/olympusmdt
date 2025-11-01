@@ -1,52 +1,65 @@
 'use client';
 
-import { LucideIcon } from 'lucide-react';
-import { ButtonHTMLAttributes } from 'react';
+import React from 'react';
+import { Loader2, LucideIcon } from 'lucide-react';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
   size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
   icon?: LucideIcon;
   iconPosition?: 'left' | 'right';
 }
 
-const variantClasses = {
-  primary: 'bg-gradient-to-r from-police-blue to-police-blue-light text-white hover:shadow-lg hover:shadow-police-blue/50',
-  secondary: 'glass-strong hover:glass text-white',
-  danger: 'bg-gradient-to-r from-accent-red to-accent-orange text-white hover:shadow-lg hover:shadow-accent-red/50',
-  ghost: 'text-dark-300 hover:text-white hover:bg-white/5',
-};
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      variant = 'primary',
+      size = 'md',
+      loading = false,
+      icon: Icon,
+      iconPosition = 'left',
+      className = '',
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const variantClasses = {
+      primary: 'btn-primary',
+      secondary: 'btn-secondary',
+      ghost: 'btn-ghost',
+      destructive: 'btn-destructive',
+    };
 
-const sizeClasses = {
-  sm: 'px-3 py-2 text-sm',
-  md: 'px-6 py-3',
-  lg: 'px-8 py-4 text-lg',
-};
+    const sizeClasses = {
+      sm: 'px-4 py-2 text-sm gap-1',
+      md: 'px-6 py-3 text-base gap-2',
+      lg: 'px-8 py-4 text-lg gap-3',
+    };
 
-export default function Button({
-  children,
-  variant = 'primary',
-  size = 'md',
-  icon: Icon,
-  iconPosition = 'left',
-  className = '',
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      className={`
-        rounded-xl font-semibold transition-all duration-200
-        disabled:opacity-50 disabled:cursor-not-allowed
-        flex items-center gap-2 justify-center
-        ${variantClasses[variant]}
-        ${sizeClasses[size]}
-        ${className}
-      `}
-      {...props}
-    >
-      {Icon && iconPosition === 'left' && <Icon className="w-5 h-5" />}
-      {children}
-      {Icon && iconPosition === 'right' && <Icon className="w-5 h-5" />}
-    </button>
-  );
-}
+    const classes = `inline-flex items-center justify-center ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+
+    return (
+      <button
+        ref={ref}
+        className={classes}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          Icon && iconPosition === 'left' && <Icon className="w-5 h-5" />
+        )}
+        {children}
+        {!loading && Icon && iconPosition === 'right' && <Icon className="w-5 h-5" />}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
+
+export default Button;
