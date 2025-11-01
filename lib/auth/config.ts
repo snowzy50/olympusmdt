@@ -48,7 +48,7 @@ export const authOptions: AuthOptions = {
         token.isAdmin = true;
         token.discordId = 'admin-bypass';
         token.discordRoles = [];
-        token.agencies = ['lspd', 'bcso', 'sasp', 'ems', 'doj'];
+        token.agencies = ['sasp', 'samc', 'safd', 'dynasty8', 'doj'];
         return token;
       }
 

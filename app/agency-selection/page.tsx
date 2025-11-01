@@ -1,130 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Activity, Flame, Home, Scale, Shield, ArrowRight, LogOut, Loader2 } from 'lucide-react';
+import { ArrowRight, LogOut, Loader2, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { AGENCIES, type AgencyConfig } from '@/config/agencies';
 
-interface Agency {
-  id: string;
-  name: string;
-  shortName: string;
-  description: string;
-  icon: typeof Shield;
-  logo: string;
-  color: string;
-  gradient: string;
-  hoverBorder: string;
-  hoverBg: string;
-  dashboardPath: string;
-}
-
-const allAgencies: Agency[] = [
-  {
-    id: 'sasp',
-    name: 'Police d\'État',
-    shortName: 'SASP',
-    description: 'San Andreas State Police',
-    icon: Shield,
-    logo: '/images/agencies/sasp.png',
-    color: 'primary',
-    gradient: 'from-primary-600 to-primary-800',
-    hoverBorder: 'border-primary-400',
-    hoverBg: 'bg-primary-50',
-    dashboardPath: '/dashboard/sasp',
-  },
-  {
-    id: 'lspd',
-    name: 'Police de Los Santos',
-    shortName: 'LSPD',
-    description: 'Los Santos Police Department',
-    icon: Shield,
-    logo: '/images/agencies/lspd.png',
-    color: 'primary',
-    gradient: 'from-primary-600 to-primary-800',
-    hoverBorder: 'border-primary-400',
-    hoverBg: 'bg-primary-50',
-    dashboardPath: '/dashboard/lspd',
-  },
-  {
-    id: 'bcso',
-    name: 'Shérif du Comté',
-    shortName: 'BCSO',
-    description: 'Blaine County Sheriff Office',
-    icon: Shield,
-    logo: '/images/agencies/bcso.png',
-    color: 'primary',
-    gradient: 'from-primary-600 to-primary-800',
-    hoverBorder: 'border-primary-400',
-    hoverBg: 'bg-primary-50',
-    dashboardPath: '/dashboard/bcso',
-  },
-  {
-    id: 'ems',
-    name: 'Services médicaux',
-    shortName: 'EMS',
-    description: 'Emergency Medical Services',
-    icon: Activity,
-    logo: '/images/agencies/ems.png',
-    color: 'error',
-    gradient: 'from-error-600 to-error-800',
-    hoverBorder: 'border-error-400',
-    hoverBg: 'bg-error-50',
-    dashboardPath: '/dashboard/ems',
-  },
-  {
-    id: 'doj',
-    name: 'Justice',
-    shortName: 'DOJ',
-    description: 'Department of Justice',
-    icon: Scale,
-    logo: '/images/agencies/doj.webp',
-    color: 'purple',
-    gradient: 'from-purple-600 to-purple-800',
-    hoverBorder: 'border-purple-400',
-    hoverBg: 'bg-purple-50',
-    dashboardPath: '/dashboard/doj',
-  },
-  {
-    id: 'safd',
-    name: 'Pompiers',
-    shortName: 'SAFD',
-    description: 'San Andreas Fire Department',
-    icon: Flame,
-    logo: '/images/agencies/safd.png',
-    color: 'error',
-    gradient: 'from-red-600 to-orange-800',
-    hoverBorder: 'border-red-400',
-    hoverBg: 'bg-red-50',
-    dashboardPath: '/dashboard/safd',
-  },
-  {
-    id: 'samc',
-    name: 'Services médicaux',
-    shortName: 'SAMC',
-    description: 'San Andreas Medical Center',
-    icon: Activity,
-    logo: '/images/agencies/samc.png',
-    color: 'error',
-    gradient: 'from-red-600 to-red-800',
-    hoverBorder: 'border-red-400',
-    hoverBg: 'bg-red-50',
-    dashboardPath: '/dashboard/samc',
-  },
-  {
-    id: 'dynasty8',
-    name: 'Immobilier',
-    shortName: 'Dynasty 8',
-    description: 'Dynasty 8 Real Estate',
-    icon: Home,
-    logo: '/images/agencies/dynasty8.png',
-    color: 'primary',
-    gradient: 'from-blue-600 to-blue-800',
-    hoverBorder: 'border-blue-400',
-    hoverBg: 'bg-blue-50',
-    dashboardPath: '/dashboard/dynasty8',
-  },
-];
+// Utiliser le type depuis le fichier de configuration
+type Agency = AgencyConfig;
 
 export default function AgencySelectionPage() {
   const [hoveredAgency, setHoveredAgency] = useState<string | null>(null);
@@ -143,7 +26,7 @@ export default function AgencySelectionPage() {
 
     // Filtrer les agences en fonction des rôles de l'utilisateur
     const allowedAgencyIds = session.user?.agencies || [];
-    const filtered = allAgencies.filter(agency =>
+    const filtered = AGENCIES.filter(agency =>
       allowedAgencyIds.includes(agency.id)
     );
 

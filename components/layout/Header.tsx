@@ -51,7 +51,7 @@ export default function Header() {
             <div className="absolute right-0 mt-2 w-64 glass-strong rounded-xl border border-white/10 overflow-hidden z-50 animate-fade-in">
               <div className="p-4 border-b border-white/10">
                 <p className="text-sm font-semibold text-white">Officier Dupont</p>
-                <p className="text-xs text-dark-400">dupont@lspd.gov</p>
+                <p className="text-xs text-dark-400">dupont@sasp.gov</p>
                 <div className="mt-2 inline-flex px-3 py-1 rounded-lg bg-accent-green/20 text-accent-green text-xs font-semibold">
                   En service
                 </div>
