@@ -1,5 +1,6 @@
 import { AuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { DiscordRoleService } from './discord-role-service';
 import { mapRoleIdsToAgencies } from '@/config/agencies';
 
@@ -14,9 +15,43 @@ export const authOptions: AuthOptions = {
         },
       },
     }),
+    CredentialsProvider({
+      id: 'credentials',
+      name: 'Admin Credentials',
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) {
+          return null;
+        }
+
+        // Vérification des identifiants admin
+        if (credentials.username === 'Admin' && credentials.password === 'Admin123') {
+          return {
+            id: 'admin-bypass',
+            name: 'Admin',
+            email: 'admin@olympusrp.fr',
+            isAdmin: true,
+          };
+        }
+
+        return null;
+      },
+    }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
+      // Gestion de l'admin bypass
+      if (user && (user as any).isAdmin) {
+        token.isAdmin = true;
+        token.discordId = 'admin-bypass';
+        token.discordRoles = [];
+        token.agencies = ['lspd', 'bcso', 'sasp', 'ems', 'doj'];
+        return token;
+      }
+
       if (account && profile) {
         token.discordId = (profile as any).id;
         token.accessToken = account.access_token || '';

@@ -119,7 +119,7 @@ export default function PlanificationPage() {
                   onClick={() => setCurrentDate(new Date())}
                   className="px-4 py-2 rounded-lg glass-strong hover:glass transition-all duration-200 text-sm font-semibold text-white"
                 >
-                  Aujourd'hui
+                  Aujourd&apos;hui
                 </button>
                 <button
                   onClick={() => setCurrentDate(addDays(currentDate, 7))}
@@ -218,7 +218,7 @@ export default function PlanificationPage() {
                 <div className="w-1 h-12 bg-police-blue rounded-full"></div>
                 <div>
                   <h3 className="font-semibold text-white">Patrouille de nuit - Zone Nord</h3>
-                  <p className="text-sm text-dark-400">Aujourd'hui, 22:00 - 06:00</p>
+                  <p className="text-sm text-dark-400">Aujourd&apos;hui, 22:00 - 06:00</p>
                 </div>
               </div>
               <button className="px-4 py-2 rounded-lg bg-accent-red/20 text-accent-red hover:bg-accent-red/30 transition-colors text-sm font-semibold">
