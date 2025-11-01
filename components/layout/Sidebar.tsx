@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import { getAgencyById } from '@/config/agencies';
+import Image from 'next/image';
 import {
   Home,
   Calendar,
@@ -96,6 +99,9 @@ const Sidebar: React.FC = () => {
   const pathSegments = pathname.split('/').filter(Boolean);
   const currentAgency = pathSegments[1] || 'sasp'; // dashboard est à [0], agency à [1]
 
+  // Récupérer la configuration de l'agence
+  const agencyConfig = getAgencyById(currentAgency);
+
   // TODO: Récupérer le plan de l'agence depuis la session/context
   // Pour l'instant, on utilise 'starter' par défaut
   const [currentPlan] = useState<AgencyPlan>('starter');
@@ -179,12 +185,26 @@ const Sidebar: React.FC = () => {
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center w-full' : ''}`}>
-            <button className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center hover:bg-primary-700 transition-colors">
-              <Shield className="w-6 h-6 text-white" />
-            </button>
+            {agencyConfig ? (
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-dark-100">
+                <Image
+                  src={agencyConfig.logo}
+                  alt={`Logo ${agencyConfig.shortName}`}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <button className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center hover:bg-primary-700 transition-colors">
+                <Shield className="w-6 h-6 text-white" />
+              </button>
+            )}
             {!isCollapsed && (
               <div>
-                <h1 className="text-sm font-bold text-gray-100">SASP - Olympus RP</h1>
+                <h1 className="text-sm font-bold text-gray-100">
+                  {agencyConfig?.shortName || 'SASP'} - Olympus RP
+                </h1>
                 <p className="text-xs text-gray-400">Mobile Data Terminal</p>
               </div>
             )}
@@ -238,6 +258,9 @@ const Sidebar: React.FC = () => {
       <div className="border-t border-gray-700">
         {/* Déconnexion */}
         <button
+          onClick={async () => {
+            await signOut({ callbackUrl: '/login' });
+          }}
           className={`w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-red-600/10 hover:text-red-400 transition-colors ${
             isCollapsed ? 'justify-center' : ''
           }`}

@@ -2,9 +2,11 @@
 
 import { Search, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { data: session } = useSession();
 
   return (
     <header className="h-20 glass-strong border-b border-white/10 flex items-center justify-between px-8">
@@ -40,8 +42,8 @@ export default function Header() {
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">Officier Dupont</p>
-              <p className="text-xs text-dark-400">Badge #1234</p>
+              <p className="text-sm font-semibold text-white">{session?.user?.name || 'Agent'}</p>
+              <p className="text-xs text-dark-400">{session?.user?.email || 'Non connecté'}</p>
             </div>
             <ChevronDown className={`w-4 h-4 text-dark-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
@@ -50,8 +52,8 @@ export default function Header() {
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-64 glass-strong rounded-xl border border-white/10 overflow-hidden z-50 animate-fade-in">
               <div className="p-4 border-b border-white/10">
-                <p className="text-sm font-semibold text-white">Officier Dupont</p>
-                <p className="text-xs text-dark-400">dupont@sasp.gov</p>
+                <p className="text-sm font-semibold text-white">{session?.user?.name || 'Agent'}</p>
+                <p className="text-xs text-dark-400">{session?.user?.email || 'Non connecté'}</p>
                 <div className="mt-2 inline-flex px-3 py-1 rounded-lg bg-accent-green/20 text-accent-green text-xs font-semibold">
                   En service
                 </div>
@@ -64,7 +66,12 @@ export default function Header() {
                   Paramètres
                 </button>
                 <div className="my-2 h-px bg-white/10"></div>
-                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-white/5 transition-colors text-sm text-accent-red hover:text-accent-red">
+                <button
+                  onClick={async () => {
+                    await signOut({ callbackUrl: '/login' });
+                  }}
+                  className="w-full text-left px-4 py-2 rounded-lg hover:bg-white/5 transition-colors text-sm text-accent-red hover:text-accent-red"
+                >
                   Déconnexion
                 </button>
               </div>
