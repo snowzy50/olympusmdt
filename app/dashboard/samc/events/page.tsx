@@ -60,7 +60,7 @@ export default function EventsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Données de test initiales
+  // Données de test initiales - SAMC
   useMemo(() => {
     if (events.length === 0) {
       const testEvents: Partial<CalendarEvent>[] = [
