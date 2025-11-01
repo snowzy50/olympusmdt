@@ -6,7 +6,7 @@
  * Créé par Snowzy - 2025
  */
 
-type DataType = 'cases' | 'complaints' | 'summons' | 'equipment' | 'warrants' | 'agents' | 'citizens';
+type DataType = 'cases' | 'complaints' | 'summons' | 'equipment' | 'warrants' | 'agents' | 'citizens' | 'events';
 
 interface Subscription {
   callback: (payload: { type: DataType; data: any[] }) => void;
@@ -39,7 +39,7 @@ class RealtimeSyncService {
   }
 
   private initializeFromLocalStorage(): void {
-    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens'];
+    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens', 'events'];
 
     types.forEach(type => {
       try {
@@ -194,7 +194,7 @@ class RealtimeSyncService {
   }
 
   public clearAll(): void {
-    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens'];
+    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens', 'events'];
 
     types.forEach(type => {
       this.cache[type] = [];

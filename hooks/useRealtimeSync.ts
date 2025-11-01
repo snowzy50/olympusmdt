@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import realtimeSync from '../services/realtimeSync';
 
-type DataType = 'cases' | 'complaints' | 'summons' | 'equipment' | 'warrants' | 'agents' | 'citizens';
+type DataType = 'cases' | 'complaints' | 'summons' | 'equipment' | 'warrants' | 'agents' | 'citizens' | 'events';
 
 /**
  * Hook principal pour synchroniser un type de données
@@ -64,7 +64,7 @@ export function useGlobalSync() {
 
   useEffect(() => {
     const updateStats = () => {
-      const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens'];
+      const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens', 'events'];
 
       let total = 0;
       let recent = 0;
@@ -89,7 +89,7 @@ export function useGlobalSync() {
 
     // S'abonner à tous les types
     const unsubscribes: (() => void)[] = [];
-    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens'];
+    const types: DataType[] = ['cases', 'complaints', 'summons', 'equipment', 'warrants', 'agents', 'citizens', 'events'];
 
     types.forEach(type => {
       const unsub = realtimeSync.subscribe(type, updateStats);

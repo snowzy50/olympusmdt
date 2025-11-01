@@ -52,7 +52,7 @@ export default function PlaceholderPage({
             Page en cours de développement
           </h2>
           <p className="text-gray-400 max-w-md mx-auto mb-6">
-            Cette fonctionnalité sera bientôt disponible. L'interface et les fonctionnalités
+            Cette fonctionnalité sera bientôt disponible. L&apos;interface et les fonctionnalités
             sont actuellement en cours de développement.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg text-gray-300">

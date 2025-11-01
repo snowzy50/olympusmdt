@@ -4,16 +4,136 @@
 
 ---
 
+## [0.18.9] - 2025-01-20 (Session 4)
+
+### ✨ Ajouts
+
+#### Page Événements (Events Calendar) - COMPLÈTE ✅
+- **Route:** `/dashboard/events`
+- **Fichier:** `app/dashboard/events/page.tsx` (~770 lignes)
+- **Type:** Refonte complète - Système de calendrier collaboratif inspiré Google Calendar
+
+**Fonctionnalités implémentées:**
+
+##### 📅 Calendrier Vue Mensuelle
+- ✅ Grille 7 colonnes (Lun-Dim)
+- ✅ Navigation mois précédent/suivant
+- ✅ Bouton "Aujourd'hui" pour retour rapide
+- ✅ Affichage jours du mois actuel + jours adjacents
+- ✅ Mise en évidence du jour actuel (cercle bleu)
+- ✅ Affichage événements par jour (max 3 visibles + "+X more")
+- ✅ Clic sur jour pour créer événement
+- ✅ Clic sur événement pour voir détails
+
+##### ✍️ Gestion des Événements (CRUD complet)
+- ✅ **Création** via modal avec formulaire complet
+  - Titre (requis)
+  - Description
+  - Date et heure de début
+  - Date et heure de fin
+  - Catégorie (8 types)
+  - Lieu
+  - Case à cocher "Toute la journée"
+- ✅ **Lecture** via modal de détails
+  - Affichage toutes les informations
+  - Badge coloré selon catégorie
+  - Informations créateur et dates
+- ✅ **Modification** via bouton Modifier dans modal détails
+- ✅ **Suppression** via bouton Supprimer dans modal détails
+
+##### 🎨 Système de Catégories (8 types)
+- ✅ **Patrouille** (bleu) - `bg-blue-600`
+- ✅ **Formation** (vert) - `bg-green-600`
+- ✅ **Réunion** (violet) - `bg-purple-600`
+- ✅ **Opération** (rouge) - `bg-red-600`
+- ✅ **Maintenance** (jaune) - `bg-yellow-600`
+- ✅ **Tribunal** (indigo) - `bg-indigo-600`
+- ✅ **Personnel** (rose) - `bg-pink-600`
+- ✅ **Autre** (gris) - `bg-gray-600`
+
+##### 🔍 Filtres et Recherche
+- ✅ Barre de recherche (titre, description, lieu)
+- ✅ Filtre par catégorie (dropdown)
+- ✅ Légende catégories avec pastilles colorées
+- ✅ Compteur d'événements filtrés
+
+##### 📋 Liste Événements à Venir
+- ✅ Section dédiée sous le calendrier
+- ✅ Affichage 5 prochains événements
+- ✅ Badge catégorie + date/heure + lieu
+- ✅ Clic pour ouvrir détails
+
+##### 🧪 Données de Test (4 événements)
+- ✅ **Briefing Matinal** (aujourd'hui, 08:00-09:00, meeting)
+- ✅ **Formation Tir** (dans 2 jours, 14:00-17:00, training)
+- ✅ **Opération Surveillance** (dans 5 jours, 20:00-02:00, operation)
+- ✅ **Maintenance Flotte** (dans 7 jours, toute la journée, maintenance)
+
+### 📝 Fichiers Modifiés
+
+#### 1. `services/realtimeSync.ts`
+- Ajout type `'events'` dans `DataType`
+- Ajout `'events'` dans initialisation localStorage
+- Ajout `'events'` dans méthodes `clearAll()` et arrays de types
+
+#### 2. `hooks/useRealtimeSync.ts`
+- Ajout type `'events'` dans `DataType` (3 occurrences)
+- Support complet synchronisation événements temps réel
+
+#### 3. `app/dashboard/events/page.tsx`
+- **Création complète** (~770 lignes)
+- Interface `CalendarEvent` avec 15 propriétés
+- Configuration `CATEGORY_CONFIG` pour 8 catégories
+- Composant `EventForm` (~180 lignes)
+- Composant `EventDetails` (~120 lignes)
+- Logique calendrier avec `generateCalendarDays()`
+- Gestion états (modal, événement sélectionné, filtres)
+- Synchronisation temps réel via `useRealtimeSync('events')`
+
+### 🎯 Impact
+
+**Fonctionnalités:**
+- ✅ Système calendrier collaboratif complet
+- ✅ Tous les utilisateurs peuvent créer des événements
+- ✅ Interface inspirée Google Calendar
+- ✅ Synchronisation temps réel multi-onglets
+- ✅ CRUD complet sur événements
+- ✅ Système catégories avec couleurs
+- ✅ Filtrage et recherche avancés
+
+**Expérience Utilisateur:**
+- ✅ Navigation intuitive mois par mois
+- ✅ Vue d'ensemble claire du mois
+- ✅ Création rapide par clic sur jour
+- ✅ Détails complets par clic sur événement
+- ✅ Liste événements à venir toujours visible
+- ✅ Indicateurs visuels clairs (badges colorés)
+
+**Technique:**
+- ✅ Code TypeScript strict
+- ✅ Composants réutilisables (EventForm, EventDetails)
+- ✅ useMemo pour optimisation filtres
+- ✅ Pattern localStorage + pub/sub
+- ✅ Validation formulaire complète
+
+**Métriques:**
+- +770 lignes de code (page événements)
+- +2 modifications services/hooks
+- +4 événements de test
+- +8 catégories configurées
+- 100% fonctionnel
+
+---
+
 ## [0.18.8] - 2025-01-20 (Session 3)
 
 ### ✨ Ajouts
 
 #### Pages Placeholder - COMPLET ✅
 - **Composant:** `components/layout/PlaceholderPage.tsx`
-- **Fonctionnalité:** 11 pages placeholder créées
+- **Fonctionnalité:** 14 pages placeholder créées
 
 **Pages créées:**
-- ✅ Événements (`/dashboard/events`)
 - ✅ Dispatch (`/dashboard/dispatch`)
 - ✅ Mes dossiers en cours (`/dashboard/active-cases`)
 - ✅ Agents (`/dashboard/agents`)
@@ -50,7 +170,7 @@
 - ✅ Expérience utilisateur cohérente
 
 **Métriques:**
-- +11 pages placeholder
+- +14 pages placeholder
 - +1 composant réutilisable
 - ~250 lignes de code ajoutées
 
@@ -176,7 +296,8 @@
 
 | Version | Date | Ajouts | Lignes Code | Status |
 |---------|------|--------|-------------|--------|
-| 0.18.8 | 2025-01-20 | Pages Placeholder (11) | ~250 | ✅ Complet |
+| 0.18.9 | 2025-01-20 | Page Événements (Calendar) | ~770 | ✅ Complet |
+| 0.18.8 | 2025-01-20 | Pages Placeholder (14) | ~250 | ✅ Complet |
 | 0.18.7 | 2025-01-20 | Page Plaintes + Modal | ~640 | ✅ Complet |
 | 0.18.6 | 2025-01-20 | Infrastructure base | ~1530 | ✅ Complet |
 
@@ -184,17 +305,17 @@
 
 ## 🎯 Prochaines Versions Prévues
 
-### [0.18.8] - À venir
+### [0.19.0] - À venir
 - Page Équipements (Equipment)
 - Inventaires multi-agences
 - Système de réservation
 
-### [0.18.9] - À venir
+### [0.19.1] - À venir
 - Page Mes Dossiers (Active Cases)
 - Upload fichiers
 - Visualiseur intégré
 
-### [0.19.0] - À venir
+### [0.19.2] - À venir
 - Page Convocations (Summons)
 - Export PDF officiel
 - Simulation temps réel

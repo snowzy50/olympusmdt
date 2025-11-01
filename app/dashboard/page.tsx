@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Sidebar from '@/components/layout/Sidebar';
 import { DashboardCard, StatusIndicator, Badge, Card, Button } from '@/components/ui';
 import {
   AlertCircle,
@@ -31,11 +30,8 @@ export default function DashboardPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-dark-200 flex">
-      <Sidebar />
-
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-40 glass-strong border-b border-gray-700/50 px-8 py-5 backdrop-blur-xl">
+    <>
+      <header className="sticky top-0 z-40 glass-strong border-b border-gray-700/50 px-8 py-5 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">
@@ -289,7 +285,6 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
