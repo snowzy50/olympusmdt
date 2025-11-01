@@ -21,3 +21,5 @@ export type { DashboardCardProps } from './DashboardCard';
 
 export { default as StatusIndicator } from './StatusIndicator';
 export type { StatusIndicatorProps } from './StatusIndicator';
+
+export { Modal } from './Modal';
