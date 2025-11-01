@@ -4,6 +4,58 @@
 
 ---
 
+## [0.18.8] - 2025-01-20 (Session 3)
+
+### ✨ Ajouts
+
+#### Pages Placeholder - COMPLET ✅
+- **Composant:** `components/layout/PlaceholderPage.tsx`
+- **Fonctionnalité:** 11 pages placeholder créées
+
+**Pages créées:**
+- ✅ Événements (`/dashboard/events`)
+- ✅ Dispatch (`/dashboard/dispatch`)
+- ✅ Mes dossiers en cours (`/dashboard/active-cases`)
+- ✅ Agents (`/dashboard/agents`)
+- ✅ Citoyens (`/dashboard/citizens`)
+- ✅ Mandats d'arrêt (`/dashboard/warrants`)
+- ✅ Véhicules de service (`/dashboard/vehicles`)
+- ✅ Équipements (`/dashboard/equipment`)
+- ✅ Convocations (`/dashboard/summons`)
+- ✅ Unités (`/dashboard/units`)
+- ✅ Divisions (`/dashboard/divisions`)
+- ✅ Paramètres (`/dashboard/settings`)
+- ✅ Logs (`/dashboard/logs`)
+- ✅ Cache Demo (`/dashboard/cache-demo`)
+
+**Caractéristiques PlaceholderPage:**
+- 7 thèmes de couleur (primary, blue, green, purple, red, yellow, orange)
+- Design professionnel cohérent
+- Badge "En construction" animé
+- Icône et description personnalisables
+- Réutilisable pour nouvelles pages
+
+### 🐛 Corrections
+
+**Problème:** Clics sur sidebar redirigeaient vers page d'accueil
+**Cause:** Routes sans page.tsx associée
+**Solution:** Création de pages placeholder pour toutes les routes
+
+### 🎯 Impact
+
+**Navigation:**
+- ✅ 100% des liens sidebar fonctionnels
+- ✅ Aucune redirection non désirée
+- ✅ Messages clairs pour pages en développement
+- ✅ Expérience utilisateur cohérente
+
+**Métriques:**
+- +11 pages placeholder
+- +1 composant réutilisable
+- ~250 lignes de code ajoutées
+
+---
+
 ## [0.18.7] - 2025-01-20 (Session 2)
 
 ### ✨ Ajouts
@@ -124,6 +176,7 @@
 
 | Version | Date | Ajouts | Lignes Code | Status |
 |---------|------|--------|-------------|--------|
+| 0.18.8 | 2025-01-20 | Pages Placeholder (11) | ~250 | ✅ Complet |
 | 0.18.7 | 2025-01-20 | Page Plaintes + Modal | ~640 | ✅ Complet |
 | 0.18.6 | 2025-01-20 | Infrastructure base | ~1530 | ✅ Complet |
 
