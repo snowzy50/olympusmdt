@@ -32,6 +32,7 @@ interface TerritoryMapEditorProps {
   onPOIClick?: (poi: TerritoryPOI) => void;
   drawingPoints?: Coordinates[];
   className?: string;
+  highlightedOrgId?: string | null;
 }
 
 // Types de cartes disponibles
@@ -116,6 +117,7 @@ export function TerritoryMapEditor({
   onPOIClick,
   drawingPoints,
   className = '',
+  highlightedOrgId = null,
 }: TerritoryMapEditorProps) {
   const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
 
@@ -309,6 +311,14 @@ export function TerritoryMapEditor({
           const org = organizations.find((o) => o.id === territory.organization_id);
           const color = territory.color || org?.color || '#888888';
 
+          // Déterminer si ce territoire est highlight ou dimmed
+          const isHighlighted = highlightedOrgId ? territory.organization_id === highlightedOrgId : false;
+          const isDimmed = highlightedOrgId && territory.organization_id !== highlightedOrgId;
+
+          // Ajuster l'opacité et le poids en fonction du highlight
+          const fillOpacity = isDimmed ? territory.opacity * 0.2 : isHighlighted ? Math.min(territory.opacity * 1.5, 1) : territory.opacity;
+          const weight = isHighlighted ? 4 : 2;
+
           return (
             <Polygon
               key={territory.id}
@@ -316,8 +326,9 @@ export function TerritoryMapEditor({
               pathOptions={{
                 color: color,
                 fillColor: color,
-                fillOpacity: territory.opacity,
-                weight: 2,
+                fillOpacity: fillOpacity,
+                weight: weight,
+                className: isHighlighted ? 'territory-highlighted' : '',
               }}
               eventHandlers={{
                 click: () => onTerritoryClick?.(territory),
@@ -418,6 +429,23 @@ export function TerritoryMapEditor({
         /* Optimiser le rendu des polygones */
         .leaflet-interactive {
           will-change: transform;
+        }
+
+        /* Animation pour territoires highlighted */
+        .territory-highlighted {
+          animation: territory-pulse 1.5s ease-in-out infinite;
+          filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        @keyframes territory-pulse {
+          0%, 100% {
+            opacity: 1;
+            stroke-width: 4;
+          }
+          50% {
+            opacity: 0.8;
+            stroke-width: 6;
+          }
         }
       `}</style>
     </div>

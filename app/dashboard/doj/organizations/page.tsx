@@ -7,10 +7,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Target } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
 import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
 import { TerritoryDetailsModal } from '@/components/organizations/TerritoryDetailsModal';
+import { OrganizationsSidebar } from '@/components/organizations/OrganizationsSidebar';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import type { Coordinates } from '@/types/organizations';
 
@@ -32,6 +33,8 @@ export default function OrganizationsPage() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedTerritory, setSelectedTerritory] = useState<any>(null);
   const [showTerritoryDetails, setShowTerritoryDetails] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [highlightedOrgId, setHighlightedOrgId] = useState<string | null>(null);
 
   // Annuler le dernier point
   const handleUndoLastPoint = () => {
@@ -89,13 +92,22 @@ export default function OrganizationsPage() {
       {/* Header minimal */}
       <div className="flex-shrink-0 px-4 py-2 border-b border-gray-700 bg-gray-900/50">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">
-              Carte des Territoires
-            </h1>
-            <p className="text-xs text-gray-400">
-              Clic droit sur la carte pour créer un territoire
-            </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              title="Toggle sidebar"
+            >
+              <Menu className="w-5 h-5 text-gray-400" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-white">
+                Carte des Territoires
+              </h1>
+              <p className="text-xs text-gray-400">
+                Clic droit sur la carte pour créer un territoire
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {/* Stats compacts */}
@@ -145,6 +157,7 @@ export default function OrganizationsPage() {
             onTerritoryClick={handleTerritoryClick}
             drawingPoints={isDrawing ? drawingPoints : undefined}
             className="h-full"
+            highlightedOrgId={highlightedOrgId}
           />
         )}
       </div>
@@ -172,6 +185,16 @@ export default function OrganizationsPage() {
             ? organizations.find((org) => org.id === selectedTerritory.organization_id) || null
             : null
         }
+      />
+
+      {/* Sidebar des organisations */}
+      <OrganizationsSidebar
+        organizations={organizations}
+        territories={territories}
+        selectedOrgId={highlightedOrgId}
+        onSelectOrganization={setHighlightedOrgId}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
     </div>
   );
