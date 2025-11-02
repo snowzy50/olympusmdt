@@ -141,9 +141,9 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
   }, [deleteCall, handleCloseModal]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950">
+    <div className="h-full flex flex-col bg-gray-950">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+      <div className="flex-shrink-0 p-3 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Dispatch Central - {agencyName}</h1>
@@ -167,10 +167,10 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
         </div>
       </div>
 
-      {/* Layout principal: Panel (30%) + Carte (70%) */}
+      {/* Layout principal: Panel (23%) + Carte (77%) */}
       <div className="flex-1 flex overflow-hidden">
         {/* Panel gauche */}
-        <div className="w-[30%] flex-shrink-0">
+        <div className="w-[23%] flex-shrink-0">
           <DispatchPanel
             calls={activeCalls}
             onCallClick={handleCallClick}
@@ -180,7 +180,7 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
         </div>
 
         {/* Carte GTA V */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-2">
           {isLoading ? (
             <div className="w-full h-full flex items-center justify-center bg-gray-900 rounded-xl border border-gray-700">
               <div className="text-center">

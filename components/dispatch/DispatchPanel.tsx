@@ -116,45 +116,40 @@ export function DispatchPanel({
   return (
     <div className={`flex flex-col h-full bg-gray-900/50 backdrop-blur-sm border-r border-gray-700 ${className}`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Radio className="w-6 h-6 text-blue-400" />
+      <div className="p-3 border-b border-gray-700">
+        <div className="mb-3">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
+            <Radio className="w-5 h-5 text-blue-400" />
             Dispatch Central
           </h2>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onCreateCall}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-1 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvel appel
-          </motion.button>
+          <p className="text-[10px] text-gray-400 flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            Cliquez sur la carte pour créer un appel
+          </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          <div className="bg-gray-800/50 rounded-lg p-2">
-            <div className="text-xs text-gray-400">Total</div>
-            <div className="text-lg font-bold text-white">{stats.total}</div>
+        <div className="grid grid-cols-4 gap-1.5 mb-2">
+          <div className="bg-gray-800/50 rounded p-1.5">
+            <div className="text-[10px] text-gray-400">Total</div>
+            <div className="text-base font-bold text-white">{stats.total}</div>
           </div>
-          <div className="bg-yellow-500/10 rounded-lg p-2">
-            <div className="text-xs text-yellow-400">En attente</div>
-            <div className="text-lg font-bold text-yellow-300">{stats.pending}</div>
+          <div className="bg-yellow-500/10 rounded p-1.5">
+            <div className="text-[10px] text-yellow-400">Attente</div>
+            <div className="text-base font-bold text-yellow-300">{stats.pending}</div>
           </div>
-          <div className="bg-blue-500/10 rounded-lg p-2">
-            <div className="text-xs text-blue-400">Actifs</div>
-            <div className="text-lg font-bold text-blue-300">{stats.active}</div>
+          <div className="bg-blue-500/10 rounded p-1.5">
+            <div className="text-[10px] text-blue-400">Actifs</div>
+            <div className="text-base font-bold text-blue-300">{stats.active}</div>
           </div>
-          <div className="bg-red-500/10 rounded-lg p-2">
-            <div className="text-xs text-red-400">Code 1</div>
-            <div className="text-lg font-bold text-red-300">{stats.code1}</div>
+          <div className="bg-red-500/10 rounded p-1.5">
+            <div className="text-[10px] text-red-400">Code 1</div>
+            <div className="text-base font-bold text-red-300">{stats.code1}</div>
           </div>
         </div>
 
         {/* Recherche */}
-        <div className="relative mb-3">
+        <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
