@@ -276,27 +276,30 @@ function InteractiveGTAMapComponent({
               key={call.id}
               position={position}
               icon={createMarkerIcon(call)}
-              eventHandlers={{
-                click: () => {
-                  console.log('[Marker] Clic sur appel:', call);
-                  onMarkerClick?.(call);
-                },
-              }}
             >
               <Popup>
-                <div className="min-w-[200px] p-2">
+                <div className="min-w-[220px]">
                   <div className="font-bold text-gray-900 mb-1 text-sm">{call.title}</div>
                   <div className="text-xs text-gray-600 mb-2">
                     {call.call_type.toUpperCase()} - {call.priority.toUpperCase()}
                   </div>
                   {call.location.address && (
-                    <div className="text-xs text-gray-500 mb-1">
+                    <div className="text-xs text-gray-500 mb-2">
                       📍 {call.location.address}
                     </div>
                   )}
-                  <div className="text-xs text-gray-400">
-                    {new Date(call.created_at).toLocaleTimeString('fr-FR')}
+                  <div className="text-xs text-gray-400 mb-3">
+                    🕐 {new Date(call.created_at).toLocaleTimeString('fr-FR')}
                   </div>
+                  <button
+                    onClick={() => {
+                      console.log('[Popup] Ouverture modal:', call);
+                      onMarkerClick?.(call);
+                    }}
+                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors"
+                  >
+                    📋 Voir les détails
+                  </button>
                 </div>
               </Popup>
             </Marker>
@@ -323,8 +326,13 @@ function InteractiveGTAMapComponent({
 
         .leaflet-popup-content-wrapper {
           background: white !important;
-          border-radius: 8px !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+          border-radius: 12px !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+          padding: 4px !important;
+        }
+
+        .leaflet-popup-content {
+          margin: 8px !important;
         }
 
         .leaflet-popup-tip {
