@@ -6,9 +6,9 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Users, Shield } from 'lucide-react';
+import { X, MapPin, Users, Shield, Edit2, Trash2 } from 'lucide-react';
 import type { Territory, Organization } from '@/types/organizations';
 import { organizationTypeLabels, organizationTypeIcons } from '@/types/organizations';
 
@@ -17,6 +17,8 @@ interface TerritoryDetailsModalProps {
   onClose: () => void;
   territory: Territory | null;
   organization: Organization | null;
+  onEdit?: (territory: Territory) => void;
+  onDelete?: (territoryId: string) => void;
 }
 
 export function TerritoryDetailsModal({
@@ -24,8 +26,26 @@ export function TerritoryDetailsModal({
   onClose,
   territory,
   organization,
+  onEdit,
+  onDelete,
 }: TerritoryDetailsModalProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   if (!isOpen || !territory || !organization) return null;
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(territory.id);
+      onClose();
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(territory);
+      onClose();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -138,13 +158,60 @@ export function TerritoryDetailsModal({
               )}
             </div>
 
-            {/* Bouton d'action */}
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              Fermer
-            </button>
+            {/* Boutons d'action */}
+            {!showDeleteConfirm ? (
+              <div className="flex gap-3">
+                {onEdit && (
+                  <button
+                    onClick={handleEdit}
+                    className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Modifier
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Supprimer
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
+                  <p className="text-red-400 text-sm font-medium">
+                    ⚠️ Êtes-vous sûr de vouloir supprimer ce territoire ?
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Cette action est irréversible et supprimera définitivement le territoire "{territory.name}".
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    Confirmer la suppression
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </motion.div>

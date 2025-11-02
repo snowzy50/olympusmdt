@@ -11,6 +11,7 @@ import { Menu } from 'lucide-react';
 import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
 import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
 import { TerritoryDetailsModal } from '@/components/organizations/TerritoryDetailsModal';
+import { TerritoryEditModal } from '@/components/organizations/TerritoryEditModal';
 import { OrganizationsSidebar } from '@/components/organizations/OrganizationsSidebar';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import type { Coordinates, Territory } from '@/types/organizations';
@@ -24,6 +25,8 @@ export default function OrganizationsPage() {
     isConnected,
     createOrganization,
     createTerritory,
+    updateTerritory,
+    deleteTerritory,
     addMember,
   } = useOrganizations();
 
@@ -36,6 +39,8 @@ export default function OrganizationsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [highlightedOrgId, setHighlightedOrgId] = useState<string | null>(null);
   const [focusedTerritory, setFocusedTerritory] = useState<Territory | null>(null);
+  const [editingTerritory, setEditingTerritory] = useState<Territory | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Annuler le dernier point
   const handleUndoLastPoint = () => {
@@ -86,6 +91,36 @@ export default function OrganizationsPage() {
     console.log('[Organizations] Territoire cliqué:', territory);
     setSelectedTerritory(territory);
     setShowTerritoryDetails(true);
+  };
+
+  // Éditer un territoire
+  const handleEditTerritory = (territory: Territory) => {
+    setEditingTerritory(territory);
+    setShowEditModal(true);
+  };
+
+  // Sauvegarder les modifications d'un territoire
+  const handleSaveTerritory = async (territoryId: string, updates: Partial<Territory>) => {
+    try {
+      await updateTerritory(territoryId, updates);
+      setShowEditModal(false);
+      setEditingTerritory(null);
+    } catch (error) {
+      console.error('[Organizations] Erreur mise à jour territoire:', error);
+      throw error;
+    }
+  };
+
+  // Supprimer un territoire
+  const handleDeleteTerritory = async (territoryId: string) => {
+    try {
+      await deleteTerritory(territoryId);
+      setShowTerritoryDetails(false);
+      setSelectedTerritory(null);
+    } catch (error) {
+      console.error('[Organizations] Erreur suppression territoire:', error);
+      alert('Erreur lors de la suppression du territoire');
+    }
   };
 
   return (
@@ -185,6 +220,24 @@ export default function OrganizationsPage() {
             ? organizations.find((org) => org.id === selectedTerritory.organization_id) || null
             : null
         }
+        onEdit={handleEditTerritory}
+        onDelete={handleDeleteTerritory}
+      />
+
+      {/* Modal d'édition territoire */}
+      <TerritoryEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingTerritory(null);
+        }}
+        territory={editingTerritory}
+        organization={
+          editingTerritory
+            ? organizations.find((org) => org.id === editingTerritory.organization_id) || null
+            : null
+        }
+        onSave={handleSaveTerritory}
       />
 
       {/* Sidebar des organisations */}
