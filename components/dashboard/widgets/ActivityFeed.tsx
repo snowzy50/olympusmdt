@@ -66,28 +66,28 @@ export function ActivityFeed({ events, calls, agencyId }: ActivityFeedProps) {
 
   // Combiner et trier les activités
   const activities = useMemo(() => {
-    const eventActivities: ActivityItem[] = events.map((event) => ({
+    const eventActivities: ActivityItem[] = events.filter(e => e && e.start_date).map((event) => ({
       id: event.id,
       type: 'event' as const,
-      icon: eventTypeIcons[event.category],
+      icon: eventTypeIcons[event.category] || '📌',
       title: event.title,
       subtitle: 'Événement planifié',
-      time: formatTimeParis(event.date),
-      timestamp: new Date(event.date),
+      time: formatTimeParis(event.start_date),
+      timestamp: new Date(event.start_date),
       color: 'blue',
       location: event.location,
     }));
 
-    const callActivities: ActivityItem[] = calls.map((call) => ({
+    const callActivities: ActivityItem[] = calls.filter(c => c && c.created_at && c.location).map((call) => ({
       id: call.id,
       type: 'call' as const,
-      icon: callTypeIcons[call.call_type],
+      icon: callTypeIcons[call.call_type] || '📍',
       title: call.title,
-      subtitle: `Appel ${call.priority.toUpperCase()}`,
+      subtitle: `Appel ${call.priority?.toUpperCase() || 'NORMAL'}`,
       time: formatTimeParis(call.created_at),
       timestamp: new Date(call.created_at),
       color: call.priority === 'code1' ? 'red' : call.priority === 'code2' ? 'orange' : 'blue',
-      location: call.location.address,
+      location: call.location?.address || 'Non spécifié',
     }));
 
     return [...eventActivities, ...callActivities]
