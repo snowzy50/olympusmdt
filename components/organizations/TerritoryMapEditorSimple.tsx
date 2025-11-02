@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MapContainer, ImageOverlay, Polygon, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import type { Territory, TerritoryPOI, Organization, Coordinates } from '@/types/organizations';
@@ -58,23 +58,33 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
 }
 
 // Composant pour sauvegarder et restaurer la position de la carte
-function MapViewPreserver({ viewRef }: { viewRef: React.MutableRefObject<{ center: L.LatLng; zoom: number } | null> }) {
+function MapViewPreserver() {
   const map = useMap();
 
   useEffect(() => {
-    // Restaurer la position sauvegardée au montage
-    if (viewRef.current) {
-      console.log('[Map] Restauration position:', viewRef.current);
-      map.setView(viewRef.current.center, viewRef.current.zoom, { animate: false });
+    // Restaurer la position depuis localStorage au montage
+    const savedView = localStorage.getItem('gta-map-view');
+    if (savedView) {
+      try {
+        const { lat, lng, zoom } = JSON.parse(savedView);
+        console.log('[Map] Restauration position depuis localStorage:', { lat, lng, zoom });
+        map.setView([lat, lng], zoom, { animate: false });
+      } catch (error) {
+        console.error('[Map] Erreur restauration position:', error);
+      }
     }
 
     // Sauvegarder la position à chaque mouvement
     const handleMoveEnd = () => {
-      viewRef.current = {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const viewData = {
+        lat: center.lat,
+        lng: center.lng,
+        zoom: zoom,
       };
-      console.log('[Map] Position sauvegardée:', viewRef.current);
+      localStorage.setItem('gta-map-view', JSON.stringify(viewData));
+      console.log('[Map] Position sauvegardée dans localStorage:', viewData);
     };
 
     map.on('moveend', handleMoveEnd);
@@ -84,7 +94,7 @@ function MapViewPreserver({ viewRef }: { viewRef: React.MutableRefObject<{ cente
       map.off('moveend', handleMoveEnd);
       map.off('zoomend', handleMoveEnd);
     };
-  }, [map, viewRef]);
+  }, [map]);
 
   return null;
 }
@@ -100,7 +110,6 @@ export function TerritoryMapEditor({
   className = '',
 }: TerritoryMapEditorProps) {
   const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
-  const mapViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
 
   // Dimensions de la carte GTA V
   const mapWidth = 8192;
@@ -271,7 +280,7 @@ export function TerritoryMapEditor({
         <ImageOverlay key={currentMapType} url={mapTypes[currentMapType]} bounds={bounds} opacity={1} />
 
         {/* Préserver la position de la carte */}
-        <MapViewPreserver viewRef={mapViewRef} />
+        <MapViewPreserver />
 
         {/* Handler de clic */}
         <MapClickHandler onMapClick={handleMapClick} />
