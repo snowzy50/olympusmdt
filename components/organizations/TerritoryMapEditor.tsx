@@ -159,7 +159,7 @@ export function TerritoryMapEditor({
       name: territoryName,
       coordinates: currentPoints,
       color: selectedOrganization.color,
-      opacity: 0.35,
+      opacity: 0.5,
     };
 
     onTerritoryCreate?.(newTerritory);
@@ -434,35 +434,33 @@ export function TerritoryMapEditor({
         {/* Polygone en cours de dessin */}
         {isDrawing && currentPoints.length > 0 && (
           <>
+            {/* Preview du polygone rempli si >= 3 points */}
+            {currentPoints.length >= 3 && (
+              <Polygon
+                positions={currentPoints.map((p) => gtaToPixel(p))}
+                pathOptions={{
+                  color: selectedOrganization?.color || '#0000FF',
+                  fillColor: selectedOrganization?.color || '#0000FF',
+                  fillOpacity: 0.3,
+                  weight: 3,
+                  dashArray: '10, 5',
+                }}
+              />
+            )}
+
             {/* Points */}
             {currentPoints.map((point, index) => (
               <Marker key={index} position={gtaToPixel(point)} />
             ))}
 
-            {/* Lignes entre les points */}
-            {currentPoints.length > 1 && (
+            {/* Lignes entre les points (si < 3 points) */}
+            {currentPoints.length > 1 && currentPoints.length < 3 && (
               <Polyline
                 positions={currentPoints.map((p) => gtaToPixel(p))}
                 pathOptions={{
                   color: selectedOrganization?.color || '#0000FF',
-                  weight: 2,
-                  dashArray: '5, 5',
-                }}
-              />
-            )}
-
-            {/* Ligne de fermeture (preview) */}
-            {currentPoints.length >= 3 && (
-              <Polyline
-                positions={[
-                  gtaToPixel(currentPoints[currentPoints.length - 1]),
-                  gtaToPixel(currentPoints[0]),
-                ]}
-                pathOptions={{
-                  color: selectedOrganization?.color || '#0000FF',
-                  weight: 2,
-                  dashArray: '5, 5',
-                  opacity: 0.5,
+                  weight: 3,
+                  dashArray: '10, 5',
                 }}
               />
             )}
