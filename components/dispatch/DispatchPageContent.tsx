@@ -17,8 +17,18 @@ import { Wifi, WifiOff } from 'lucide-react';
 
 // Import dynamique de la carte pour éviter les erreurs SSR avec Leaflet
 const InteractiveGTAMap = dynamic(
-  () => import('./InteractiveGTAMap').then((mod) => mod.InteractiveGTAMap),
-  { ssr: false }
+  () => import('./InteractiveGTAMap'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 rounded-xl border border-gray-700">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Chargement de la carte...</p>
+        </div>
+      </div>
+    )
+  }
 );
 
 interface DispatchPageContentProps {

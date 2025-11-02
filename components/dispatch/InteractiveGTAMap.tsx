@@ -51,7 +51,7 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
   return null;
 }
 
-export function InteractiveGTAMap({
+function InteractiveGTAMapComponent({
   calls,
   onMapClick,
   onMarkerClick,
@@ -316,3 +316,9 @@ export function InteractiveGTAMap({
     </div>
   );
 }
+
+// Export nommé
+export { InteractiveGTAMapComponent as InteractiveGTAMap };
+
+// Export par défaut pour l'import dynamique
+export default InteractiveGTAMapComponent;
