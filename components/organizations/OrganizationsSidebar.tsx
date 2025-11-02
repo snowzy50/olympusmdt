@@ -17,6 +17,7 @@ interface OrganizationsSidebarProps {
   territories: Territory[];
   selectedOrgId: string | null;
   onSelectOrganization: (orgId: string | null) => void;
+  onTerritoryFocus?: (territory: Territory) => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -26,6 +27,7 @@ export function OrganizationsSidebar({
   territories,
   selectedOrgId,
   onSelectOrganization,
+  onTerritoryFocus,
   isOpen,
   onToggle,
 }: OrganizationsSidebarProps) {
@@ -162,8 +164,10 @@ export function OrganizationsSidebar({
                             orgTerritories.map((territory) => (
                               <div
                                 key={territory.id}
-                                className="pl-4 py-2 bg-gray-900/50 rounded border-l-2 hover:bg-gray-800/50 transition-colors"
+                                onClick={() => onTerritoryFocus?.(territory)}
+                                className="pl-4 py-2 bg-gray-900/50 rounded border-l-2 hover:bg-gray-800/50 transition-colors cursor-pointer"
                                 style={{ borderLeftColor: territory.color || org.color }}
+                                title="Cliquer pour zoomer sur ce territoire"
                               >
                                 <div className="flex items-center gap-2">
                                   <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />

@@ -13,7 +13,7 @@ import { TerritoryCreationModal } from '@/components/organizations/TerritoryCrea
 import { TerritoryDetailsModal } from '@/components/organizations/TerritoryDetailsModal';
 import { OrganizationsSidebar } from '@/components/organizations/OrganizationsSidebar';
 import { useOrganizations } from '@/hooks/useOrganizations';
-import type { Coordinates } from '@/types/organizations';
+import type { Coordinates, Territory } from '@/types/organizations';
 
 export default function OrganizationsPage() {
   const {
@@ -35,6 +35,7 @@ export default function OrganizationsPage() {
   const [showTerritoryDetails, setShowTerritoryDetails] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [highlightedOrgId, setHighlightedOrgId] = useState<string | null>(null);
+  const [focusedTerritory, setFocusedTerritory] = useState<Territory | null>(null);
 
   // Annuler le dernier point
   const handleUndoLastPoint = () => {
@@ -156,6 +157,7 @@ export default function OrganizationsPage() {
             drawingPoints={isDrawing ? drawingPoints : undefined}
             className="h-full"
             highlightedOrgId={highlightedOrgId}
+            focusedTerritory={focusedTerritory}
           />
         )}
       </div>
@@ -191,6 +193,7 @@ export default function OrganizationsPage() {
         territories={territories}
         selectedOrgId={highlightedOrgId}
         onSelectOrganization={setHighlightedOrgId}
+        onTerritoryFocus={setFocusedTerritory}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />

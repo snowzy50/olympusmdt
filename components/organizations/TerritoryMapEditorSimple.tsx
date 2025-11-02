@@ -33,6 +33,7 @@ interface TerritoryMapEditorProps {
   drawingPoints?: Coordinates[];
   className?: string;
   highlightedOrgId?: string | null;
+  focusedTerritory?: Territory | null;
 }
 
 // Types de cartes disponibles
@@ -108,6 +109,36 @@ function MapViewPreserver() {
   return null;
 }
 
+// Composant pour zoomer sur un territoire
+function TerritoryFocuser({
+  territory,
+  gtaToPixel,
+}: {
+  territory: Territory | null | undefined;
+  gtaToPixel: (coord: Coordinates) => [number, number];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!territory || !territory.coordinates.length) return;
+
+    // Calculer le centre du territoire (moyenne des coordonnées)
+    const pixelCoords = territory.coordinates.map((coord) => gtaToPixel(coord));
+    const centerLat = pixelCoords.reduce((sum, coord) => sum + coord[0], 0) / pixelCoords.length;
+    const centerLng = pixelCoords.reduce((sum, coord) => sum + coord[1], 0) / pixelCoords.length;
+
+    console.log('[Map] Zoom sur territoire:', territory.name, { centerLat, centerLng });
+
+    // Zoomer sur le territoire avec animation
+    map.flyTo([centerLat, centerLng], 0, {
+      duration: 1,
+      easeLinearity: 0.25,
+    });
+  }, [territory, map, gtaToPixel]);
+
+  return null;
+}
+
 export function TerritoryMapEditor({
   territories,
   pois,
@@ -118,6 +149,7 @@ export function TerritoryMapEditor({
   drawingPoints,
   className = '',
   highlightedOrgId = null,
+  focusedTerritory = null,
 }: TerritoryMapEditorProps) {
   const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
 
@@ -301,6 +333,9 @@ export function TerritoryMapEditor({
 
         {/* Préserver la position de la carte */}
         <MapViewPreserver />
+
+        {/* Zoomer sur un territoire */}
+        <TerritoryFocuser territory={focusedTerritory} gtaToPixel={gtaToPixel} />
 
         {/* Handler de clic */}
         <MapClickHandler onMapClick={handleMapClick} />
