@@ -13,6 +13,7 @@ import {
   Edit,
   Trash2,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 
 /**
@@ -56,6 +57,7 @@ export default function LicensesPage() {
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewingLicense, setViewingLicense] = useState<License | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<Partial<License>>({
@@ -140,6 +142,10 @@ export default function LicensesPage() {
       restrictions: '',
     });
     setShowModal(true);
+  };
+
+  const handleView = (license: License) => {
+    setViewingLicense(license);
   };
 
   const handleEdit = (license: License) => {
@@ -368,18 +374,24 @@ export default function LicensesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleView(license)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Voir les détails"
+                        >
                           <Eye className="w-4 h-4 text-gray-400" />
                         </button>
                         <button
                           onClick={() => handleEdit(license)}
                           className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Modifier"
                         >
                           <Edit className="w-4 h-4 text-gray-400" />
                         </button>
                         <button
                           onClick={() => handleDelete(license.id)}
                           className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4 text-error-500" />
                         </button>
@@ -518,6 +530,128 @@ export default function LicensesPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingLicense && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Détails du permis</h2>
+              <button
+                onClick={() => setViewingLicense(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Header Info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-primary-500/10 rounded-lg">
+                    <FileText className="w-8 h-8 text-primary-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">{viewingLicense.citizenName}</h3>
+                    <p className="text-gray-400">{viewingLicense.licenseNumber}</p>
+                  </div>
+                </div>
+                <Badge
+                  variant={licenseStatusLabels[viewingLicense.status].color as any}
+                  className="flex items-center gap-2 text-base px-4 py-2"
+                >
+                  {getStatusIcon(viewingLicense.status)}
+                  {licenseStatusLabels[viewingLicense.status].label}
+                </Badge>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">ID Citoyen</p>
+                  <p className="text-white font-semibold">{viewingLicense.citizenId}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Type de permis</p>
+                  <p className="text-white font-semibold">
+                    {licenseTypeLabels[viewingLicense.type]}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Date d'émission</p>
+                  <p className="text-white font-semibold">
+                    {new Date(viewingLicense.issueDate).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Date d'expiration</p>
+                  <p className="text-white font-semibold">
+                    {new Date(viewingLicense.expiryDate).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-400 mb-2">Points restants</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 bg-gray-700 rounded-full h-3">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          viewingLicense.points <= 4
+                            ? 'bg-error-500'
+                            : viewingLicense.points <= 8
+                            ? 'bg-warning-500'
+                            : 'bg-success-500'
+                        }`}
+                        style={{ width: `${(viewingLicense.points / 12) * 100}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`font-bold text-lg ${
+                        viewingLicense.points <= 4
+                          ? 'text-error-500'
+                          : viewingLicense.points <= 8
+                          ? 'text-warning-500'
+                          : 'text-success-500'
+                      }`}
+                    >
+                      {viewingLicense.points} / 12
+                    </span>
+                  </div>
+                </div>
+
+                {viewingLicense.restrictions && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-400 mb-1">Restrictions</p>
+                    <div className="p-3 bg-warning-500/10 border border-warning-500/30 rounded-lg">
+                      <p className="text-white">{viewingLicense.restrictions}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                <Button variant="secondary" onClick={() => setViewingLicense(null)}>
+                  Fermer
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewingLicense(null);
+                    handleEdit(viewingLicense);
+                  }}
+                >
+                  Modifier
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
