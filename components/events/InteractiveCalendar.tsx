@@ -146,7 +146,7 @@ export function InteractiveCalendar({
               onClick={goToToday}
               className="px-3 py-1.5 hover:bg-gray-700 rounded text-sm text-gray-300 transition-colors"
             >
-              Aujourd'hui
+              Aujourd&apos;hui
             </button>
             <button
               onClick={goToNextMonth}
@@ -170,7 +170,7 @@ export function InteractiveCalendar({
 
       {/* Grille du calendrier */}
       <div className="grid grid-cols-7 gap-1">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {daysInMonth.map((day, index) => {
             const dayEvents = getEventsForDate(day.date);
             const isToday = day.date.toDateString() === new Date().toDateString();
@@ -178,46 +178,83 @@ export function InteractiveCalendar({
             const hasEvents = dayEvents.length > 0;
 
             return (
-              <motion.button
+              <motion.div
                 key={`${day.date.toISOString()}-${index}`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2, delay: index * 0.01 }}
-                onClick={() => onDateClick?.(day.date)}
                 className={`
-                  relative aspect-square p-1 rounded-lg transition-all duration-200
-                  hover:bg-gray-800 hover:scale-105
-                  ${day.isCurrentMonth ? 'text-white' : 'text-gray-600'}
-                  ${isToday ? 'bg-blue-600/20 border-2 border-blue-500' : 'border border-gray-700'}
+                  relative min-h-[80px] md:min-h-[100px] p-1 rounded-lg transition-all duration-200
+                  border ${day.isCurrentMonth ? 'text-white' : 'text-gray-600'}
+                  ${isToday ? 'bg-blue-600/10 border-2 border-blue-500' : 'border-gray-700'}
                   ${isSelected ? 'ring-2 ring-blue-400' : ''}
                   ${!day.isCurrentMonth ? 'opacity-50' : ''}
+                  ${!hasEvents ? 'hover:bg-gray-800 cursor-pointer' : ''}
                 `}
+                onClick={() => !hasEvents && onDateClick?.(day.date)}
               >
                 {/* Numéro du jour */}
-                <span className={`text-xs md:text-sm font-medium ${isToday ? 'text-blue-300' : ''}`}>
+                <div
+                  className={`text-xs md:text-sm font-medium mb-1 ${isToday ? 'text-blue-300' : ''} ${hasEvents ? 'cursor-pointer hover:text-blue-400' : ''}`}
+                  onClick={(e) => {
+                    if (hasEvents) {
+                      e.stopPropagation();
+                      onDateClick?.(day.date);
+                    }
+                  }}
+                >
                   {day.date.getDate()}
-                </span>
+                </div>
 
-                {/* Indicateurs d'événements */}
+                {/* Liste des événements avec titre */}
                 {hasEvents && (
-                  <div className="absolute bottom-1 left-1 right-1 flex gap-0.5 justify-center flex-wrap">
-                    {dayEvents.slice(0, 3).map((event, i) => (
-                      <motion.div
-                        key={event.id}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.1 + i * 0.05 }}
-                        className={`w-1 h-1 rounded-full ${categoryColors[event.category]}`}
-                        title={event.title}
-                      />
-                    ))}
+                  <div className="space-y-0.5 overflow-hidden">
+                    {dayEvents.slice(0, 3).map((event) => {
+                      const startTime = new Date(event.start_date).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+
+                      return (
+                        <motion.div
+                          key={event.id}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventClick?.(event);
+                          }}
+                          className={`
+                            text-[9px] md:text-[10px] px-1 py-0.5 rounded
+                            ${categoryColors[event.category]} bg-opacity-90
+                            ${priorityBorders[event.priority]} border-l-2
+                            cursor-pointer hover:scale-105 transition-all
+                            text-white font-medium truncate
+                            hover:z-10 hover:shadow-lg
+                          `}
+                          title={`${startTime} - ${event.title}`}
+                        >
+                          {!event.all_day && <span className="opacity-75">{startTime}</span>} {event.title}
+                        </motion.div>
+                      );
+                    })}
                     {dayEvents.length > 3 && (
-                      <span className="text-[8px] text-gray-400">+{dayEvents.length - 3}</span>
+                      <div
+                        className="text-center cursor-pointer hover:bg-gray-700 rounded transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDateClick?.(day.date);
+                        }}
+                      >
+                        <span className="text-[9px] text-gray-300 font-semibold">
+                          +{dayEvents.length - 3} autre{dayEvents.length - 3 > 1 ? 's' : ''}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
-              </motion.button>
+              </motion.div>
             );
           })}
         </AnimatePresence>

@@ -7,8 +7,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { eventsRealtimeService, type CalendarEvent } from '@/services/eventsRealtimeService';
-import { useAgency } from '@/contexts/AgencyContext';
 
 interface UseEventsOptions {
   autoConnect?: boolean;
@@ -16,11 +16,23 @@ interface UseEventsOptions {
     start: string;
     end: string;
   };
+  agencyId?: string; // Option pour override l'agence depuis l'URL
+}
+
+/**
+ * Extrait l'ID de l'agence depuis le pathname
+ * Ex: /dashboard/samc/events -> 'samc'
+ */
+function getAgencyFromPath(pathname: string): string | null {
+  const match = pathname.match(/\/dashboard\/([^/]+)/);
+  return match ? match[1] : null;
 }
 
 export function useEvents(options: UseEventsOptions = {}) {
-  const { autoConnect = true, dateRange } = options;
-  const { currentAgency } = useAgency();
+  const { autoConnect = true, dateRange, agencyId: agencyIdOverride } = options;
+  const pathname = usePathname();
+  const agencyId = agencyIdOverride || getAgencyFromPath(pathname);
+
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -32,7 +44,7 @@ export function useEvents(options: UseEventsOptions = {}) {
    * Charger les événements depuis Supabase
    */
   const loadEvents = useCallback(async () => {
-    if (!currentAgency?.id) return;
+    if (!agencyId) return;
 
     setIsLoading(true);
     setError(null);
@@ -42,12 +54,12 @@ export function useEvents(options: UseEventsOptions = {}) {
 
       if (dateRange) {
         fetchedEvents = await eventsRealtimeService.getEventsByDateRange(
-          currentAgency.id,
+          agencyId,
           dateRange.start,
           dateRange.end
         );
       } else {
-        fetchedEvents = await eventsRealtimeService.getEvents(currentAgency.id);
+        fetchedEvents = await eventsRealtimeService.getEvents(agencyId);
       }
 
       setEvents(fetchedEvents);
@@ -58,14 +70,14 @@ export function useEvents(options: UseEventsOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentAgency?.id, dateRange]);
+  }, [agencyId, dateRange]);
 
   /**
    * Créer un nouvel événement
    */
   const createEvent = useCallback(
     async (eventData: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at' | 'agency_id' | 'created_by'>) => {
-      if (!currentAgency?.id) {
+      if (!agencyId) {
         throw new Error('Aucune agence sélectionnée');
       }
 
@@ -73,7 +85,7 @@ export function useEvents(options: UseEventsOptions = {}) {
         const newEvent = await eventsRealtimeService.createEvent({
           ...eventData,
           id: eventsRealtimeService.generateEventId(),
-          agency_id: currentAgency.id,
+          agency_id: agencyId,
           created_by: 'current-user', // TODO: Remplacer par l'ID utilisateur réel
         });
 
@@ -84,7 +96,7 @@ export function useEvents(options: UseEventsOptions = {}) {
         throw error;
       }
     },
-    [currentAgency?.id]
+    [agencyId]
   );
 
   /**
@@ -167,12 +179,12 @@ export function useEvents(options: UseEventsOptions = {}) {
    * Effet pour initialiser la connexion Realtime
    */
   useEffect(() => {
-    if (!currentAgency?.id || !autoConnect) return;
+    if (!agencyId || !autoConnect) return;
 
     const initRealtime = async () => {
       try {
         // Se connecter au canal Realtime
-        await eventsRealtimeService.connect(currentAgency.id);
+        await eventsRealtimeService.connect(agencyId);
 
         // S'abonner aux changements
         const unsubscribe = eventsRealtimeService.subscribe(subscriptionIdRef.current, {
@@ -203,10 +215,13 @@ export function useEvents(options: UseEventsOptions = {}) {
             setError(err);
             setIsConnected(false);
           },
+          onConnected: () => {
+            console.log('[useEvents] ✅ Connexion Realtime établie');
+            setIsConnected(true);
+          },
         });
 
         unsubscribeRef.current = unsubscribe;
-        setIsConnected(true);
 
         // Charger les événements initiaux
         await loadEvents();
@@ -225,7 +240,7 @@ export function useEvents(options: UseEventsOptions = {}) {
         unsubscribeRef.current();
       }
     };
-  }, [currentAgency?.id, autoConnect, loadEvents]);
+  }, [agencyId, autoConnect, loadEvents]);
 
   /**
    * Obtenir les statistiques des événements

@@ -4,7 +4,7 @@
  * Architecture: Singleton avec Supabase Realtime
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { supabase as supabaseClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface CalendarEvent {
@@ -44,7 +44,7 @@ type ErrorCallback = (error: Error) => void;
 
 class EventsRealtimeService {
   private static instance: EventsRealtimeService;
-  private supabase = createClient();
+  private supabase = supabaseClient;
   private channel: RealtimeChannel | null = null;
   private subscribers: Map<string, {
     onInsert?: EventCallback;
@@ -80,20 +80,26 @@ class EventsRealtimeService {
 
     this.currentAgencyId = agencyId;
 
-    // Créer un nouveau canal avec filtre sur l'agence
+    // Créer un nouveau canal SANS filtre (filtre côté client)
+    // Les filtres agency_id causent des timeouts WebSocket
+    // Utiliser un nom de canal simple (events-all) au lieu de events:agencyId
     this.channel = this.supabase
-      .channel(`events:${agencyId}`)
+      .channel('events-all')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'events',
-          filter: `agency_id=eq.${agencyId}`,
+          // PAS DE FILTRE - filtrage côté client
         },
         (payload) => {
-          console.log('[EventsRealtime] Nouvel événement:', payload.new);
-          this.notifySubscribers('onInsert', payload.new as CalendarEvent);
+          const event = payload.new as CalendarEvent;
+          // Filtrer côté client par agency_id
+          if (event.agency_id === agencyId) {
+            console.log('[EventsRealtime] Nouvel événement:', event);
+            this.notifySubscribers('onInsert', event);
+          }
         }
       )
       .on(
@@ -102,11 +108,15 @@ class EventsRealtimeService {
           event: 'UPDATE',
           schema: 'public',
           table: 'events',
-          filter: `agency_id=eq.${agencyId}`,
+          // PAS DE FILTRE
         },
         (payload) => {
-          console.log('[EventsRealtime] Événement mis à jour:', payload.new);
-          this.notifySubscribers('onUpdate', payload.new as CalendarEvent);
+          const event = payload.new as CalendarEvent;
+          // Filtrer côté client par agency_id
+          if (event.agency_id === agencyId) {
+            console.log('[EventsRealtime] Événement mis à jour:', event);
+            this.notifySubscribers('onUpdate', event);
+          }
         }
       )
       .on(
@@ -115,26 +125,40 @@ class EventsRealtimeService {
           event: 'DELETE',
           schema: 'public',
           table: 'events',
-          filter: `agency_id=eq.${agencyId}`,
+          // PAS DE FILTRE
         },
         (payload) => {
-          console.log('[EventsRealtime] Événement supprimé:', payload.old);
-          const eventId = (payload.old as CalendarEvent).id;
-          this.notifySubscribers('onDelete', eventId);
+          const event = payload.old as CalendarEvent;
+          // Filtrer côté client par agency_id
+          if (event.agency_id === agencyId) {
+            console.log('[EventsRealtime] Événement supprimé:', event);
+            this.notifySubscribers('onDelete', event.id);
+          }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
+        console.log(`[EventsRealtime] 📡 Status: ${status}`, err);
+
         if (status === 'SUBSCRIBED') {
           this.isConnected = true;
           console.log(`[EventsRealtime] ✅ Connecté à l'agence ${agencyId}`);
+          // Notifier tous les abonnés de la connexion
+          this.subscribers.forEach((callbacks) => {
+            if (callbacks.onConnected) {
+              callbacks.onConnected();
+            }
+          });
         } else if (status === 'CHANNEL_ERROR') {
           this.isConnected = false;
-          console.error('[EventsRealtime] ❌ Erreur de connexion');
+          console.error('[EventsRealtime] ❌ Erreur de connexion:', err);
           this.notifySubscribers('onError', new Error('Erreur de connexion au canal Realtime'));
         } else if (status === 'TIMED_OUT') {
           this.isConnected = false;
           console.error('[EventsRealtime] ⏱️ Timeout de connexion');
           this.notifySubscribers('onError', new Error('Timeout de connexion'));
+        } else if (status === 'CLOSED') {
+          this.isConnected = false;
+          console.log('[EventsRealtime] 🔌 Déconnecté');
         }
       });
   }
@@ -162,6 +186,7 @@ class EventsRealtimeService {
       onUpdate?: EventCallback;
       onDelete?: DeleteCallback;
       onError?: ErrorCallback;
+      onConnected?: () => void;
     }
   ): () => void {
     this.subscribers.set(id, callbacks);

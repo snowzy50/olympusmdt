@@ -96,11 +96,13 @@ export function EventCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      onClick={() => onView?.(event)}
       className={`
         group relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm
         rounded-xl border-l-4 ${priorityInfo.color} border-t border-r border-b border-gray-700
         overflow-hidden transition-all duration-300
         hover:shadow-2xl hover:shadow-blue-500/10
+        ${onView ? 'cursor-pointer' : ''}
         ${className}
       `}
     >

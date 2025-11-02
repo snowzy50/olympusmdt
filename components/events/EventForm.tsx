@@ -26,6 +26,7 @@ import type { CalendarEvent } from '@/services/eventsRealtimeService';
 
 interface EventFormProps {
   event?: CalendarEvent;
+  initialDate?: Date;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (eventData: Partial<CalendarEvent>) => Promise<void>;
@@ -56,13 +57,35 @@ const statuses = [
   { value: 'cancelled', label: 'Annulé' },
 ];
 
-export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) {
+export function EventForm({ event, initialDate, isOpen, onClose, onSubmit }: EventFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calculer les dates par défaut
+  const getDefaultStartDate = () => {
+    if (event?.start_date) return new Date(event.start_date).toISOString().slice(0, 16);
+    if (initialDate) {
+      const date = new Date(initialDate);
+      date.setHours(9, 0, 0, 0); // Défaut: 9h00
+      return date.toISOString().slice(0, 16);
+    }
+    return '';
+  };
+
+  const getDefaultEndDate = () => {
+    if (event?.end_date) return new Date(event.end_date).toISOString().slice(0, 16);
+    if (initialDate) {
+      const date = new Date(initialDate);
+      date.setHours(10, 0, 0, 0); // Défaut: 10h00 (1h après le début)
+      return date.toISOString().slice(0, 16);
+    }
+    return '';
+  };
+
   const [formData, setFormData] = useState({
     title: event?.title || '',
     description: event?.description || '',
-    start_date: event?.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : '',
-    end_date: event?.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : '',
+    start_date: getDefaultStartDate(),
+    end_date: getDefaultEndDate(),
     category: event?.category || 'patrouille',
     priority: event?.priority || 'normal',
     status: event?.status || 'planned',
@@ -78,6 +101,26 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
   );
 
   const [newParticipant, setNewParticipant] = useState({ name: '', role: '' });
+
+  // Réinitialiser le formulaire quand event ou initialDate change
+  useEffect(() => {
+    setFormData({
+      title: event?.title || '',
+      description: event?.description || '',
+      start_date: getDefaultStartDate(),
+      end_date: getDefaultEndDate(),
+      category: event?.category || 'patrouille',
+      priority: event?.priority || 'normal',
+      status: event?.status || 'planned',
+      location: event?.location || '',
+      all_day: event?.all_day || false,
+      notes: event?.notes || '',
+      reminder_enabled: event?.reminder?.enabled || false,
+      reminder_time: event?.reminder?.time_before || 30,
+    });
+    setParticipants(event?.participants || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event, initialDate, isOpen]);
 
   // Fermer avec Échap
   useEffect(() => {
@@ -118,6 +161,12 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
     setIsSubmitting(true);
 
     try {
+      // Valider les dates
+      if (!formData.start_date || !formData.end_date) {
+        alert('Veuillez renseigner les dates de début et de fin');
+        return;
+      }
+
       const eventData: Partial<CalendarEvent> = {
         title: formData.title,
         description: formData.description || undefined,
@@ -148,9 +197,10 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
+    <>
       {/* Backdrop */}
       <motion.div
+        key="backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -161,6 +211,7 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <motion.div
+          key="modal"
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -190,7 +241,7 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
               {/* Titre */}
               <div>
                 <label className="block text-sm font-semibold text-white mb-2">
-                  Titre de l'événement *
+                  Titre de l&apos;événement *
                 </label>
                 <input
                   type="text"
@@ -412,7 +463,7 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
 
                 {formData.reminder_enabled && (
                   <div>
-                    <label className="block text-xs text-gray-400 mb-2">Minutes avant l'événement</label>
+                    <label className="block text-xs text-gray-400 mb-2">Minutes avant l&apos;événement</label>
                     <input
                       type="number"
                       name="reminder_time"
@@ -472,6 +523,6 @@ export function EventForm({ event, isOpen, onClose, onSubmit }: EventFormProps) 
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </>
   );
 }
