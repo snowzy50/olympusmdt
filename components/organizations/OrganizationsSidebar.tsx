@@ -47,6 +47,14 @@ export function OrganizationsSidebar({
     return territories.filter((t) => t.organization_id === orgId);
   };
 
+  // Ne garder que les organisations qui ont au moins un territoire
+  const organizationsWithTerritories = React.useMemo(() => {
+    return organizations.filter((org) => {
+      const orgTerritories = territories.filter((t) => t.organization_id === org.id);
+      return orgTerritories.length > 0;
+    });
+  }, [organizations, territories]);
+
   if (!isOpen) return null;
 
   return (
@@ -63,7 +71,7 @@ export function OrganizationsSidebar({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-white">Organisations</h2>
-              <p className="text-xs text-gray-400">{organizations.length} organisations</p>
+              <p className="text-xs text-gray-400">{organizationsWithTerritories.length} organisations</p>
             </div>
             <button
               onClick={onToggle}
@@ -76,7 +84,7 @@ export function OrganizationsSidebar({
 
         {/* Liste des organisations */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {organizations.map((org) => {
+          {organizationsWithTerritories.map((org) => {
             const orgTerritories = getOrgTerritories(org.id);
             const isExpanded = expandedOrgs.has(org.id);
             const isSelected = selectedOrgId === org.id;
@@ -190,10 +198,10 @@ export function OrganizationsSidebar({
             );
           })}
 
-          {organizations.length === 0 && (
+          {organizationsWithTerritories.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Aucune organisation</p>
+              <p className="text-sm">Aucune organisation avec territoires</p>
             </div>
           )}
         </div>
@@ -203,7 +211,7 @@ export function OrganizationsSidebar({
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-gray-700/30 rounded p-2">
               <div className="text-gray-400">Organisations</div>
-              <div className="text-white font-bold">{organizations.length}</div>
+              <div className="text-white font-bold">{organizationsWithTerritories.length}</div>
             </div>
             <div className="bg-gray-700/30 rounded p-2">
               <div className="text-gray-400">Territoires</div>
