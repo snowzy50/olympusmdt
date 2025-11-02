@@ -172,7 +172,7 @@ function InteractiveGTAMapComponent({
   }, [onMapClick]);
 
   return (
-    <div className={`relative w-full h-full bg-gray-900 rounded-xl overflow-hidden ${className}`}>
+    <div className={`relative w-full h-full rounded-xl overflow-hidden ${className}`} style={{ backgroundColor: '#153d6b' }}>
       {/* Overlay pour les infos */}
       <div className="absolute inset-0 z-[1000] pointer-events-none">
         <div className="absolute top-4 left-4 bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-2xl pointer-events-auto">
@@ -250,7 +250,7 @@ function InteractiveGTAMapComponent({
         crs={L.CRS.Simple}
         className="w-full h-full"
         style={{
-          background: '#0a0e1a',
+          background: '#153d6b',
           cursor: 'crosshair',
         }}
         zoomControl={true}
@@ -318,7 +318,7 @@ function InteractiveGTAMapComponent({
         }
 
         .leaflet-container {
-          background: #0a0e1a !important;
+          background: #153d6b !important;
         }
 
         .leaflet-popup-content-wrapper {
