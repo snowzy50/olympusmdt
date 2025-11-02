@@ -12,6 +12,9 @@ import {
   Eye,
   Edit,
   Download,
+  X,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 /**
@@ -44,9 +47,23 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
 export default function FinesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingFine, setEditingFine] = useState<Fine | null>(null);
+  const [viewingFine, setViewingFine] = useState<Fine | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Fine>>({
+    citizenName: '',
+    citizenId: '',
+    violation: '',
+    amount: 0,
+    issuedBy: '',
+    officerId: '',
+    status: 'unpaid',
+  });
 
   // Données de démonstration
-  const [fines] = useState<Fine[]>([
+  const [fines, setFines] = useState<Fine[]>([
     {
       id: '1',
       fineNumber: 'FINE-2024-001',
@@ -106,6 +123,68 @@ export default function FinesPage() {
     .filter((f) => f.status === 'paid')
     .reduce((sum, f) => sum + f.amount, 0);
 
+  // Handlers
+  const handleCreate = () => {
+    setEditingFine(null);
+    setFormData({
+      citizenName: '',
+      citizenId: '',
+      violation: '',
+      amount: 0,
+      issuedBy: '',
+      officerId: '',
+      status: 'unpaid',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (fine: Fine) => {
+    setViewingFine(fine);
+  };
+
+  const handleEdit = (fine: Fine) => {
+    setEditingFine(fine);
+    setFormData(fine);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      setFines(fines.filter((f) => f.id !== deletingId));
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const now = new Date();
+    const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+    if (editingFine) {
+      setFines(
+        fines.map((f) =>
+          f.id === editingFine.id ? { ...f, ...formData } as Fine : f
+        )
+      );
+    } else {
+      const newFine: Fine = {
+        id: Date.now().toString(),
+        fineNumber: `FINE-${new Date().getFullYear()}-${String(fines.length + 1).padStart(3, '0')}`,
+        date: now.toISOString(),
+        dueDate: dueDate.toISOString().split('T')[0],
+        ...formData as Fine,
+      };
+      setFines([...fines, newFine]);
+    }
+    setShowModal(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -121,7 +200,7 @@ export default function FinesPage() {
             <Download className="w-4 h-4" />
             Exporter
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouvelle amende
           </Button>
@@ -300,14 +379,26 @@ export default function FinesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleView(fine)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Voir les détails"
+                        >
                           <Eye className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleEdit(fine)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Modifier"
+                        >
                           <Edit className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-                          <Download className="w-4 h-4 text-gray-400" />
+                        <button
+                          onClick={() => handleDelete(fine.id)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-error-500" />
                         </button>
                       </div>
                     </td>
@@ -325,6 +416,263 @@ export default function FinesPage() {
           )}
         </div>
       </Card>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
+                {editingFine ? 'Modifier l\'amende' : 'Nouvelle amende'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Nom du citoyen *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.citizenName}
+                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    ID Citoyen *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.citizenId}
+                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Infraction *
+                </label>
+                <textarea
+                  value={formData.violation}
+                  onChange={(e) => setFormData({ ...formData, violation: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 h-24 resize-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Montant ($) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Agent émetteur *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.issuedBy}
+                    onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Matricule *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.officerId}
+                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Statut *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Fine['status'] })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="unpaid">Non payée</option>
+                  <option value="paid">Payée</option>
+                  <option value="overdue">En retard</option>
+                  <option value="cancelled">Annulée</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingFine ? 'Mettre à jour' : 'Créer l\'amende'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingFine && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Détails de l'amende</h2>
+              <button
+                onClick={() => setViewingFine(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-bold text-white">{viewingFine.citizenName}</h3>
+                <Badge variant={statusLabels[viewingFine.status].color as any} className="flex items-center gap-1">
+                  {React.createElement(statusLabels[viewingFine.status].icon, { className: 'w-4 h-4' })}
+                  {statusLabels[viewingFine.status].label}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400">Numéro d'amende</p>
+                  <p className="text-lg font-medium text-white">{viewingFine.fineNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">ID Citoyen</p>
+                  <p className="text-lg font-medium text-white">{viewingFine.citizenId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Montant</p>
+                  <p className="text-lg font-bold text-warning-500">${viewingFine.amount}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Date d'émission</p>
+                  <p className="text-lg font-medium text-white">
+                    {new Date(viewingFine.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Date limite</p>
+                  <p className="text-lg font-medium text-white">
+                    {new Date(viewingFine.dueDate).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                {viewingFine.paymentDate && (
+                  <div>
+                    <p className="text-sm text-gray-400">Date de paiement</p>
+                    <p className="text-lg font-medium text-success-500">
+                      {new Date(viewingFine.paymentDate).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-400 mb-2">Infraction</p>
+                  <p className="text-white leading-relaxed">{viewingFine.violation}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Agent émetteur</p>
+                  <p className="text-lg font-medium text-white">
+                    {viewingFine.issuedBy} ({viewingFine.officerId})
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewingFine(null);
+                    handleEdit(viewingFine);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </Button>
+                <Button variant="ghost" onClick={() => setViewingFine(null)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-error-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-error-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Confirmer la suppression</h3>
+                  <p className="text-sm text-gray-400">Cette action est irréversible</p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Êtes-vous sûr de vouloir supprimer cette amende ? Toutes les données seront
+                définitivement perdues.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+                  Supprimer
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingId(null);
+                  }}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
