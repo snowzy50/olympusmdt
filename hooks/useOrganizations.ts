@@ -116,13 +116,17 @@ export function useOrganizations() {
   const createOrganization = useCallback(
     async (data: Omit<Organization, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        return await organizationsRealtimeService.createOrganization(data);
+        const result = await organizationsRealtimeService.createOrganization(data);
+        // Refresh manuel car Realtime peut avoir un délai
+        console.log('[useOrganizations] Refresh manuel après création organisation');
+        await loadData();
+        return result;
       } catch (error) {
         console.error('[useOrganizations] Erreur création organisation:', error);
         throw error;
       }
     },
-    []
+    [loadData]
   );
 
   const updateOrganization = useCallback(async (id: string, updates: Partial<Organization>) => {
@@ -215,13 +219,17 @@ export function useOrganizations() {
   const createTerritory = useCallback(
     async (data: Omit<Territory, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        return await organizationsRealtimeService.createTerritory(data);
+        const result = await organizationsRealtimeService.createTerritory(data);
+        // Refresh manuel car Realtime peut avoir un délai
+        console.log('[useOrganizations] Refresh manuel après création territoire');
+        await loadData();
+        return result;
       } catch (error) {
         console.error('[useOrganizations] Erreur création territoire:', error);
         throw error;
       }
     },
-    []
+    [loadData]
   );
 
   const updateTerritory = useCallback(async (id: string, updates: Partial<Territory>) => {
