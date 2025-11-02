@@ -84,6 +84,15 @@ const Sidebar: React.FC = () => {
   // Vérifier si l'utilisateur est admin
   const isAdmin = session?.user?.isAdmin as boolean || false;
 
+  // Filtrer la section patrouille selon l'agence
+  const filteredPatrolSection = patrolSection.filter(item => {
+    // Organisations n'est disponible que pour SASP
+    if (item.href.includes('/organizations')) {
+      return currentAgency === 'sasp';
+    }
+    return true;
+  });
+
   // Filtrer les éléments admin-only si l'utilisateur n'est pas admin
   const filteredDossierSection = dossierSection.filter(item => {
     const isAdminOnlyPage = item.href.includes('/logs') || item.href.includes('/cache-demo');
@@ -193,7 +202,7 @@ const Sidebar: React.FC = () => {
           </p>
         )}
         <ul className="space-y-1 mb-6">
-          {patrolSection.map(renderNavItem)}
+          {filteredPatrolSection.map(renderNavItem)}
         </ul>
 
         {/* Section Dossiers */}
