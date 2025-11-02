@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Users, MapPin, Trash2 } from 'lucide-react';
+import { X, Save, Users, MapPin, Trash2, Undo2 } from 'lucide-react';
 import type { Organization, OrganizationType, Territory, Coordinates, OrganizationMember } from '@/types/organizations';
 import { organizationTypeLabels, organizationTypeIcons } from '@/types/organizations';
 
@@ -22,6 +22,7 @@ interface TerritoryCreationModalProps {
   onAddMember: (member: Omit<OrganizationMember, 'id' | 'joined_at'>) => Promise<void>;
   onAddPoint?: (coords: Coordinates) => void;
   currentPoints?: Coordinates[];
+  onUndoLastPoint?: () => void;
 }
 
 type Step = 'select-org' | 'create-org' | 'draw-territory';
@@ -36,6 +37,7 @@ export function TerritoryCreationModal({
   onAddMember,
   onAddPoint,
   currentPoints = [],
+  onUndoLastPoint,
 }: TerritoryCreationModalProps) {
   const [step, setStep] = useState<Step>('select-org');
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
@@ -187,6 +189,15 @@ export function TerritoryCreationModal({
                 />
               </div>
               <div className="flex items-end gap-2">
+                {onUndoLastPoint && currentPoints.length > 1 && (
+                  <button
+                    onClick={onUndoLastPoint}
+                    className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-300 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    title="Annuler dernier point (Cmd+Z / Ctrl+Z)"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={handleClose}
                   className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
@@ -206,7 +217,7 @@ export function TerritoryCreationModal({
 
             {/* Instruction */}
             <div className="text-xs text-gray-400 text-center">
-              Cliquez sur la carte pour ajouter des points (minimum 3 requis)
+              Cliquez sur la carte pour ajouter des points (minimum 3 requis) • Cmd+Z / Ctrl+Z pour annuler dernier point
             </div>
           </div>
         </motion.div>

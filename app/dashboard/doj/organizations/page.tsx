@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target } from 'lucide-react';
 import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
 import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
@@ -29,6 +29,27 @@ export default function OrganizationsPage() {
   const [clickedCoordinates, setClickedCoordinates] = useState<Coordinates | null>(null);
   const [drawingPoints, setDrawingPoints] = useState<Coordinates[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Annuler le dernier point
+  const handleUndoLastPoint = () => {
+    if (drawingPoints.length > 1) {
+      setDrawingPoints((prev) => prev.slice(0, -1));
+    }
+  };
+
+  // Écouter Cmd+Z / Ctrl+Z pour annuler le dernier point
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+Z (Mac) ou Ctrl+Z (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && isDrawing && drawingPoints.length > 1) {
+        e.preventDefault();
+        handleUndoLastPoint();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawing, drawingPoints.length]);
 
   // Au clic sur la carte
   const handleMapClick = (lat: number, lng: number) => {
@@ -138,6 +159,7 @@ export default function OrganizationsPage() {
         onCreateOrganization={createOrganization}
         onAddMember={addMember}
         currentPoints={drawingPoints}
+        onUndoLastPoint={handleUndoLastPoint}
       />
     </div>
   );
