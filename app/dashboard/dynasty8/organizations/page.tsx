@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { Target } from 'lucide-react';
 import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
 import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
+import { TerritoryDetailsModal } from '@/components/organizations/TerritoryDetailsModal';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import type { Coordinates } from '@/types/organizations';
 
@@ -29,6 +30,8 @@ export default function OrganizationsPage() {
   const [clickedCoordinates, setClickedCoordinates] = useState<Coordinates | null>(null);
   const [drawingPoints, setDrawingPoints] = useState<Coordinates[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedTerritory, setSelectedTerritory] = useState<any>(null);
+  const [showTerritoryDetails, setShowTerritoryDetails] = useState(false);
 
   // Annuler le dernier point
   const handleUndoLastPoint = () => {
@@ -72,6 +75,13 @@ export default function OrganizationsPage() {
     setClickedCoordinates(null);
     setDrawingPoints([]);
     setIsDrawing(false);
+  };
+
+  // Clic sur un territoire pour voir les infos
+  const handleTerritoryClick = (territory: any) => {
+    console.log('[Organizations] Territoire cliqué:', territory);
+    setSelectedTerritory(territory);
+    setShowTerritoryDetails(true);
   };
 
   return (
@@ -132,6 +142,7 @@ export default function OrganizationsPage() {
             pois={pois}
             organizations={organizations}
             onMapClick={handleMapClick}
+            onTerritoryClick={handleTerritoryClick}
             drawingPoints={isDrawing ? drawingPoints : undefined}
             className="h-full"
           />
@@ -149,6 +160,18 @@ export default function OrganizationsPage() {
         onAddMember={addMember}
         currentPoints={drawingPoints}
         onUndoLastPoint={handleUndoLastPoint}
+      />
+
+      {/* Modal de détails territoire */}
+      <TerritoryDetailsModal
+        isOpen={showTerritoryDetails}
+        onClose={() => setShowTerritoryDetails(false)}
+        territory={selectedTerritory}
+        organization={
+          selectedTerritory
+            ? organizations.find((org) => org.id === selectedTerritory.organization_id) || null
+            : null
+        }
       />
     </div>
   );

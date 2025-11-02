@@ -112,19 +112,24 @@ export function TerritoryCreationModal({
       return;
     }
 
+    const territoryData = {
+      organization_id: selectedOrg.id,
+      name: territoryName,
+      coordinates: currentPoints,
+      color: selectedOrg.color,
+      opacity: 0.5,
+    };
+
+    console.log('[TerritoryCreationModal] Sauvegarde territoire:', territoryData);
+
     try {
-      await onCreateTerritory({
-        organization_id: selectedOrg.id,
-        name: territoryName,
-        coordinates: currentPoints,
-        color: selectedOrg.color,
-        opacity: 0.5,
-      });
+      const result = await onCreateTerritory(territoryData);
+      console.log('[TerritoryCreationModal] Territoire créé avec succès:', result);
 
       // Reset et fermer (le territoire apparaîtra via Realtime)
       handleClose();
     } catch (error: any) {
-      console.error('Erreur création territoire:', error);
+      console.error('[TerritoryCreationModal] Erreur création territoire:', error);
       alert(error.message || 'Erreur lors de la création du territoire');
     }
   };
