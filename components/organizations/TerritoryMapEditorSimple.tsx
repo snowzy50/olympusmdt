@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { MapContainer, ImageOverlay, Polygon, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import type { Territory, TerritoryPOI, Organization, Coordinates } from '@/types/organizations';
@@ -42,6 +42,14 @@ const mapTypes = {
 };
 
 type MapType = keyof typeof mapTypes;
+
+// Précharger les images au démarrage
+if (typeof window !== 'undefined') {
+  Object.values(mapTypes).forEach((url) => {
+    const img = new Image();
+    img.src = url;
+  });
+}
 
 // Composant pour gérer les clics droits sur la carte
 function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
@@ -115,11 +123,11 @@ export function TerritoryMapEditor({
   const mapWidth = 8192;
   const mapHeight = 8192;
 
-  // Bounds de la carte
-  const bounds = new LatLngBounds([0, 0], [mapHeight, mapWidth]);
+  // Bounds de la carte (mémoïsées)
+  const bounds = useMemo(() => new LatLngBounds([0, 0], [mapHeight, mapWidth]), [mapHeight, mapWidth]);
 
-  // Centre de la carte
-  const centerPosition: [number, number] = [mapHeight / 2, mapWidth / 2];
+  // Centre de la carte (mémoïsé)
+  const centerPosition: [number, number] = useMemo(() => [mapHeight / 2, mapWidth / 2], [mapHeight, mapWidth]);
 
   // Convertir les coordonnées GTA V en position pixel
   const gtaToPixel = useCallback(
@@ -275,9 +283,19 @@ export function TerritoryMapEditor({
         }}
         zoomControl={true}
         attributionControl={false}
+        preferCanvas={true}
+        zoomAnimation={true}
+        fadeAnimation={true}
+        markerZoomAnimation={true}
       >
         {/* Image de fond */}
-        <ImageOverlay key={currentMapType} url={mapTypes[currentMapType]} bounds={bounds} opacity={1} />
+        <ImageOverlay
+          key={currentMapType}
+          url={mapTypes[currentMapType]}
+          bounds={bounds}
+          opacity={1}
+          className="leaflet-image-layer-smooth"
+        />
 
         {/* Préserver la position de la carte */}
         <MapViewPreserver />
@@ -373,6 +391,33 @@ export function TerritoryMapEditor({
         .custom-drawing-marker {
           background: transparent !important;
           border: none !important;
+        }
+
+        /* Optimisations de performance */
+        .leaflet-image-layer-smooth {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
+          will-change: transform;
+        }
+
+        .leaflet-zoom-animated {
+          will-change: transform;
+        }
+
+        .leaflet-tile,
+        .leaflet-image-layer {
+          -webkit-transform: translate3d(0, 0, 0);
+          transform: translate3d(0, 0, 0);
+        }
+
+        /* Smooth transitions */
+        .leaflet-zoom-anim .leaflet-zoom-animated {
+          transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Optimiser le rendu des polygones */
+        .leaflet-interactive {
+          will-change: transform;
         }
       `}</style>
     </div>
