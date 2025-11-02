@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { getAgencyById } from '@/config/agencies';
+import { useSidebar } from '@/contexts/SidebarContext';
 import Image from 'next/image';
 import {
   Home,
@@ -68,7 +69,7 @@ const dossierSection: NavItem[] = [
 const adminSection: NavItem[] = [];
 
 const Sidebar: React.FC = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
   const { data: session } = useSession();
 
