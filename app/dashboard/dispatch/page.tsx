@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import PlaceholderPage from '@/components/layout/PlaceholderPage';
 import { Radio } from 'lucide-react';
 

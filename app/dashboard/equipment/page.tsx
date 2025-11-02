@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import PlaceholderPage from '@/components/layout/PlaceholderPage';
 import { Briefcase } from 'lucide-react';
 

@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { DashboardCard, StatusIndicator, Badge, Card, Button } from '@/components/ui';

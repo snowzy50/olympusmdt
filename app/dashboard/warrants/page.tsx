@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import PlaceholderPage from '@/components/layout/PlaceholderPage';
 import { Target } from 'lucide-react';
 

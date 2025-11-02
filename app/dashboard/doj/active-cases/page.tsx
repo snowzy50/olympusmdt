@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import { ActiveCasesPageContent } from '@/components/active-cases/ActiveCasesPageContent';
 
 export default function DOJActiveCasesPage() {

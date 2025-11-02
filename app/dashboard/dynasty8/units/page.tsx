@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import { UnitsPageContent } from '@/components/units/UnitsPageContent';
 
 export default function Dynasty8UnitsPage() {

@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import MainLayout from '@/components/layout/MainLayout';
 import ReportCard from '@/components/reports/ReportCard';
