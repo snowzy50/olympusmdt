@@ -242,8 +242,8 @@ function InteractiveGTAMapComponent({
       {/* Carte Leaflet avec image GTA V */}
       <MapContainer
         center={centerPosition}
-        zoom={1}
-        minZoom={0}
+        zoom={0}
+        minZoom={-1}
         maxZoom={4}
         maxBounds={bounds}
         maxBoundsViscosity={1.0}
