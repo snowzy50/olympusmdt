@@ -107,28 +107,28 @@ export function EventCard({
       `}
     >
       {/* Badge catégorie flottant */}
-      <div className={`absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r ${categoryInfo.color} text-white text-xs font-semibold shadow-lg flex items-center gap-1.5`}>
-        <span>{categoryInfo.icon}</span>
+      <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full bg-gradient-to-r ${categoryInfo.color} text-white text-[10px] font-semibold shadow-lg flex items-center gap-1`}>
+        <span className="text-xs">{categoryInfo.icon}</span>
         <span>{categoryInfo.label}</span>
       </div>
 
-      <div className="p-4 md:p-5">
+      <div className={compact ? "p-3" : "p-4"}>
         {/* Header avec titre et statut */}
-        <div className="mb-3">
-          <div className="flex items-start gap-2 mb-2">
-            <h3 className="text-lg md:text-xl font-bold text-white flex-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+        <div className={compact ? "mb-2" : "mb-3"}>
+          <div className="flex items-start gap-2 mb-1.5">
+            <h3 className={`${compact ? 'text-sm' : 'text-base'} font-bold text-white flex-1 line-clamp-1 group-hover:text-blue-400 transition-colors`}>
               {event.title}
             </h3>
           </div>
 
           {/* Statut et priorité */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-              <StatusIcon className={`w-3.5 h-3.5 ${event.status === 'in_progress' ? 'animate-spin' : ''}`} />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+              <StatusIcon className={`w-3 h-3 ${event.status === 'in_progress' ? 'animate-spin' : ''}`} />
               {statusInfo.label}
             </span>
             {event.priority !== 'normal' && (
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${priorityInfo.badge}`}>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${priorityInfo.badge}`}>
                 {priorityInfo.label}
               </span>
             )}
@@ -137,26 +137,26 @@ export function EventCard({
 
         {/* Description */}
         {!compact && event.description && (
-          <p className="text-sm text-gray-300 mb-3 line-clamp-2">
+          <p className="text-xs text-gray-300 mb-2 line-clamp-1">
             {event.description}
           </p>
         )}
 
         {/* Informations principales */}
-        <div className="space-y-2 mb-4">
+        <div className={`space-y-1 ${compact ? 'mb-2' : 'mb-3'}`}>
           {/* Date et heure */}
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <span className="text-gray-300">
+          <div className="flex items-center gap-1.5 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+            <span className="text-gray-300 truncate">
               {formatDate(event.start_date)}
               {event.start_date !== event.end_date && ` - ${formatDate(event.end_date)}`}
             </span>
           </div>
 
           {!event.all_day && (
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-purple-400 flex-shrink-0" />
-              <span className="text-gray-300">
+            <div className="flex items-center gap-1.5 text-xs">
+              <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+              <span className="text-gray-300 truncate">
                 {formatTime(event.start_date)} - {formatTime(event.end_date)}
               </span>
             </div>
@@ -164,16 +164,16 @@ export function EventCard({
 
           {/* Lieu */}
           {event.location && (
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-green-400 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs">
+              <MapPin className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
               <span className="text-gray-300 truncate">{event.location}</span>
             </div>
           )}
 
           {/* Participants */}
           {!compact && event.participants && event.participants.length > 0 && (
-            <div className="flex items-center gap-2 text-sm">
-              <Users className="w-4 h-4 text-orange-400 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs">
+              <Users className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
               <span className="text-gray-300">
                 {event.participants.length} participant{event.participants.length > 1 ? 's' : ''}
               </span>
@@ -183,25 +183,25 @@ export function EventCard({
 
         {/* Badges additionnels */}
         {!compact && (
-          <div className="flex items-center gap-2 flex-wrap mb-4">
+          <div className="flex items-center gap-1.5 flex-wrap mb-2">
             {isUpcoming && (
-              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-medium">
+              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px] font-medium">
                 À venir
               </span>
             )}
             {isPast && event.status !== 'completed' && event.status !== 'cancelled' && (
-              <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-xs font-medium flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
+              <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-[10px] font-medium flex items-center gap-1">
+                <AlertCircle className="w-2.5 h-2.5" />
                 En retard
               </span>
             )}
             {event.recurrence && (
-              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs font-medium">
+              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded text-[10px] font-medium">
                 🔄 Récurrent
               </span>
             )}
             {event.reminder?.enabled && (
-              <span className="px-2 py-0.5 bg-pink-500/20 text-pink-300 rounded text-xs font-medium">
+              <span className="px-1.5 py-0.5 bg-pink-500/20 text-pink-300 rounded text-[10px] font-medium">
                 🔔 Rappel
               </span>
             )}
@@ -210,14 +210,14 @@ export function EventCard({
 
         {/* Actions */}
         {showActions && (
-          <div className="flex items-center gap-2 pt-3 border-t border-gray-700">
+          <div className="flex items-center gap-1.5 pt-2 border-t border-gray-700">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onView?.(event)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5" />
               Voir
             </motion.button>
             {onEdit && (
@@ -225,10 +225,10 @@ export function EventCard({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onEdit(event)}
-                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="px-2.5 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
                 title="Modifier"
               >
-                <Edit2 className="w-4 h-4" />
+                <Edit2 className="w-3.5 h-3.5" />
               </motion.button>
             )}
             {onDelete && (
@@ -236,10 +236,10 @@ export function EventCard({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onDelete(event)}
-                className="px-3 py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-colors"
+                className="px-2.5 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-colors"
                 title="Supprimer"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </motion.button>
             )}
           </div>

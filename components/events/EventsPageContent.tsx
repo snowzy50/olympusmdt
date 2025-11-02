@@ -32,11 +32,36 @@ interface EventsPageContentProps {
 }
 
 const AGENCY_COLORS = {
-  sasp: { from: 'from-blue-500', to: 'to-blue-700', shadow: 'shadow-blue-500/20' },
-  samc: { from: 'from-red-500', to: 'to-red-700', shadow: 'shadow-red-500/20' },
-  safd: { from: 'from-orange-500', to: 'to-orange-700', shadow: 'shadow-orange-500/20' },
-  dynasty8: { from: 'from-purple-500', to: 'to-purple-700', shadow: 'shadow-purple-500/20' },
-  doj: { from: 'from-yellow-500', to: 'to-yellow-700', shadow: 'shadow-yellow-500/20' },
+  sasp: {
+    from: 'from-blue-500',
+    to: 'to-blue-700',
+    shadow: 'shadow-blue-500/20',
+    hover: 'hover:from-blue-600 hover:to-blue-800',
+  },
+  samc: {
+    from: 'from-red-500',
+    to: 'to-red-700',
+    shadow: 'shadow-red-500/20',
+    hover: 'hover:from-red-600 hover:to-red-800',
+  },
+  safd: {
+    from: 'from-orange-500',
+    to: 'to-orange-700',
+    shadow: 'shadow-orange-500/20',
+    hover: 'hover:from-orange-600 hover:to-orange-800',
+  },
+  dynasty8: {
+    from: 'from-purple-500',
+    to: 'to-purple-700',
+    shadow: 'shadow-purple-500/20',
+    hover: 'hover:from-purple-600 hover:to-purple-800',
+  },
+  doj: {
+    from: 'from-yellow-500',
+    to: 'to-yellow-700',
+    shadow: 'shadow-yellow-500/20',
+    hover: 'hover:from-yellow-600 hover:to-yellow-800',
+  },
 };
 
 export function EventsPageContent({ agencyId, agencyName }: EventsPageContentProps) {
@@ -168,7 +193,7 @@ export function EventsPageContent({ agencyId, agencyName }: EventsPageContentPro
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleCreateEvent}
-              className={`flex items-center gap-3 px-6 py-3 bg-gradient-to-r ${colors.from} via-current ${colors.to} text-white rounded-xl font-bold shadow-lg ${colors.shadow} transition-all`}
+              className={`flex items-center gap-3 px-6 py-3 bg-gradient-to-r ${colors.from} ${colors.to} ${colors.hover} text-white rounded-xl font-bold shadow-lg ${colors.shadow} transition-all duration-200`}
             >
               <Plus className="w-5 h-5" />
               <span>Créer un événement</span>
