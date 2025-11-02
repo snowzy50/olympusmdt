@@ -87,10 +87,10 @@ export function EventsPageContent({ agencyId, agencyName }: EventsPageContentPro
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'date' | 'priority' | 'category' | 'status'>('date');
 
   const colors = AGENCY_COLORS[agencyId as keyof typeof AGENCY_COLORS] || AGENCY_COLORS.sasp;
   const stats = getStats();
-  const upcomingEvents = getUpcomingEvents(5);
 
   const filteredEvents = useMemo(() => {
     let result = events;
@@ -106,6 +106,31 @@ export function EventsPageContent({ agencyId, agencyName }: EventsPageContentPro
     }
     return result;
   }, [events, categoryFilter, statusFilter, searchQuery]);
+
+  // Événements du mois avec tri
+  const sortedMonthEvents = useMemo(() => {
+    let result = [...filteredEvents];
+
+    // Trier selon le critère sélectionné
+    switch (sortBy) {
+      case 'date':
+        result.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+        break;
+      case 'priority':
+        const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 };
+        result.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        break;
+      case 'category':
+        result.sort((a, b) => a.category.localeCompare(b.category));
+        break;
+      case 'status':
+        const statusOrder = { in_progress: 0, planned: 1, completed: 2, cancelled: 3 };
+        result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+        break;
+    }
+
+    return result;
+  }, [filteredEvents, sortBy]);
 
   const handleViewEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -338,88 +363,74 @@ export function EventsPageContent({ agencyId, agencyName }: EventsPageContentPro
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
-                Prochains événements
-              </h3>
-              <div className="space-y-3">
-                {upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((event) => (
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4 flex flex-col h-[calc(100vh-300px)]">
+              {/* Header avec titre et tri */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  Événements du mois ({sortedMonthEvents.length})
+                </h3>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-3 py-1.5 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="date">📅 Date</option>
+                  <option value="priority">🚨 Priorité</option>
+                  <option value="category">📂 Catégorie</option>
+                  <option value="status">📊 Statut</option>
+                </select>
+              </div>
+
+              {/* Liste scrollable */}
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+                    <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                    <p className="text-red-400 font-medium text-sm">{error.message}</p>
+                    <button
+                      onClick={() => loadEvents()}
+                      className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
+                ) : sortedMonthEvents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CalendarIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm mb-4">
+                      {searchQuery || categoryFilter || statusFilter
+                        ? 'Aucun événement ne correspond à vos critères'
+                        : 'Aucun événement pour le moment'}
+                    </p>
+                    <button
+                      onClick={handleCreateEvent}
+                      className={`px-4 py-2 bg-gradient-to-r ${colors.from} ${colors.to} text-white rounded-lg font-semibold transition-all text-sm`}
+                    >
+                      Créer un événement
+                    </button>
+                  </div>
+                ) : (
+                  sortedMonthEvents.map((event) => (
                     <EventCard
                       key={event.id}
                       event={event}
                       compact
-                      showActions={false}
+                      showActions={true}
                       onView={handleViewEvent}
+                      onEdit={handleEditEvent}
+                      onDelete={handleDeleteEvent}
                     />
                   ))
-                ) : (
-                  <p className="text-gray-400 text-sm text-center py-4">
-                    Aucun événement à venir
-                  </p>
                 )}
               </div>
             </div>
           </motion.div>
         </div>
-
-        {/* Liste événements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Tous les événements ({filteredEvents.length})
-          </h2>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-              <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-              <p className="text-red-400 font-medium">{error.message}</p>
-              <button
-                onClick={() => loadEvents()}
-                className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Réessayer
-              </button>
-            </div>
-          ) : filteredEvents.length === 0 ? (
-            <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-12 text-center">
-              <CalendarIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400 mb-4">
-                {searchQuery || categoryFilter || statusFilter
-                  ? 'Aucun événement ne correspond à vos critères'
-                  : 'Aucun événement pour le moment'}
-              </p>
-              <button
-                onClick={handleCreateEvent}
-                className={`px-6 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white rounded-lg font-semibold transition-all`}
-              >
-                Créer votre premier événement
-              </button>
-            </div>
-          ) : (
-            <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-4'}>
-              <AnimatePresence mode="popLayout">
-                {filteredEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onView={handleViewEvent}
-                    onEdit={handleEditEvent}
-                    onDelete={handleDeleteEvent}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </motion.div>
       </div>
 
       <EventDetailsModal
