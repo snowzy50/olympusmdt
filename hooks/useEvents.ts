@@ -247,8 +247,14 @@ export function useEvents(options: UseEventsOptions = {}) {
             );
           },
           onDelete: (eventId) => {
-            console.log('[useEvents] Événement supprimé:', eventId);
-            setEvents((prev) => prev.filter((event) => event.id !== eventId));
+            console.log('[useEvents] 🗑️ SUPPRESSION reçue pour ID:', eventId);
+            setEvents((prev) => {
+              const before = prev.length;
+              const filtered = prev.filter((event) => event.id !== eventId);
+              const after = filtered.length;
+              console.log(`[useEvents] 📊 Avant: ${before}, Après: ${after}, Supprimé: ${before - after}`);
+              return filtered;
+            });
           },
           onError: (err) => {
             console.error('[useEvents] Erreur Realtime:', err);

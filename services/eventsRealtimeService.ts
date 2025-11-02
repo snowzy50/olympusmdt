@@ -129,10 +129,16 @@ class EventsRealtimeService {
         },
         (payload) => {
           const event = payload.old as CalendarEvent;
-          // Pour DELETE, payload.old ne contient que l'ID (limitation Postgres Realtime)
-          // On notifie tous les DELETE et le hook côté client filtrera
-          console.log('[EventsRealtime] Événement supprimé:', event.id);
-          this.notifySubscribers('onDelete', event.id);
+          console.log('[EventsRealtime] DELETE reçu:', { id: event.id, agency_id: event.agency_id });
+
+          // Filtrer côté client par agency_id
+          // Note: REPLICA IDENTITY FULL est configuré, donc payload.old contient tous les champs
+          if (event.agency_id === agencyId) {
+            console.log('[EventsRealtime] ✅ Événement supprimé (agence match):', event.id);
+            this.notifySubscribers('onDelete', event.id);
+          } else {
+            console.log('[EventsRealtime] ⏭️ DELETE ignoré (autre agence):', event.id);
+          }
         }
       )
       .subscribe((status, err) => {
@@ -218,15 +224,21 @@ class EventsRealtimeService {
     event: 'onInsert' | 'onUpdate' | 'onDelete' | 'onError',
     data: CalendarEvent | string | Error
   ): void {
-    this.subscribers.forEach((callbacks) => {
+    console.log(`[EventsRealtime] 🔔 Notification ${event} vers ${this.subscribers.size} abonné(s)`);
+
+    this.subscribers.forEach((callbacks, subscriberId) => {
       try {
         if (event === 'onInsert' && callbacks.onInsert && data instanceof Object && 'id' in data) {
+          console.log(`[EventsRealtime] ➡️ Envoi INSERT à ${subscriberId}`);
           callbacks.onInsert(data as CalendarEvent);
         } else if (event === 'onUpdate' && callbacks.onUpdate && data instanceof Object && 'id' in data) {
+          console.log(`[EventsRealtime] ➡️ Envoi UPDATE à ${subscriberId}`);
           callbacks.onUpdate(data as CalendarEvent);
         } else if (event === 'onDelete' && callbacks.onDelete && typeof data === 'string') {
+          console.log(`[EventsRealtime] ➡️ Envoi DELETE (${data}) à ${subscriberId}`);
           callbacks.onDelete(data);
         } else if (event === 'onError' && callbacks.onError && data instanceof Error) {
+          console.log(`[EventsRealtime] ➡️ Envoi ERROR à ${subscriberId}`);
           callbacks.onError(data);
         }
       } catch (error) {
