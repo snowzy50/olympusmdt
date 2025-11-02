@@ -50,11 +50,11 @@ export function OrganizationsSidebar({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ x: -320 }}
+        initial={{ x: 320 }}
         animate={{ x: 0 }}
-        exit={{ x: -320 }}
+        exit={{ x: 320 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed left-0 top-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-md border-r border-gray-700 shadow-2xl z-[1001] overflow-hidden flex flex-col"
+        className="fixed right-0 top-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-md border-l border-gray-700 shadow-2xl z-[1001] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-700 bg-gray-800/50">

@@ -92,7 +92,15 @@ export default function OrganizationsPage() {
       {/* Header minimal */}
       <div className="flex-shrink-0 px-4 py-2 border-b border-gray-700 bg-gray-900/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-white">
+              Carte des Territoires
+            </h1>
+            <p className="text-xs text-gray-400">
+              Clic droit sur la carte pour créer un territoire
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -100,16 +108,6 @@ export default function OrganizationsPage() {
             >
               <Menu className="w-5 h-5 text-gray-400" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-white">
-                Carte des Territoires
-              </h1>
-              <p className="text-xs text-gray-400">
-                Clic droit sur la carte pour créer un territoire
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
             {/* Stats compacts */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">

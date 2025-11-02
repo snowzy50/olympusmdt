@@ -311,12 +311,15 @@ export function TerritoryMapEditor({
           const org = organizations.find((o) => o.id === territory.organization_id);
           const color = territory.color || org?.color || '#888888';
 
-          // Déterminer si ce territoire est highlight ou dimmed
+          // Déterminer si ce territoire est highlight ou hidden
           const isHighlighted = highlightedOrgId ? territory.organization_id === highlightedOrgId : false;
-          const isDimmed = highlightedOrgId && territory.organization_id !== highlightedOrgId;
+          const isHidden = highlightedOrgId && territory.organization_id !== highlightedOrgId;
+
+          // Si le territoire est hidden, ne pas le rendre
+          if (isHidden) return null;
 
           // Ajuster l'opacité et le poids en fonction du highlight
-          const fillOpacity = isDimmed ? territory.opacity * 0.2 : isHighlighted ? Math.min(territory.opacity * 1.5, 1) : territory.opacity;
+          const fillOpacity = isHighlighted ? Math.min(territory.opacity * 1.5, 1) : territory.opacity;
           const weight = isHighlighted ? 4 : 2;
 
           return (
