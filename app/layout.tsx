@@ -3,8 +3,13 @@ import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "OlympusMDT - Système de Terminal Mobile de Données",
+  title: "Olympus - MDT",
   description: "Plateforme MDT premium pour les forces de l'ordre FiveM",
+  icons: {
+    icon: '/images/logo.png',
+    shortcut: '/images/logo.png',
+    apple: '/images/logo.png',
+  },
 };
 
 export default function RootLayout({
