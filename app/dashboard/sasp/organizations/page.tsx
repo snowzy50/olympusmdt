@@ -8,14 +8,20 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
+import dynamicImport from 'next/dynamic';
 import { Menu } from 'lucide-react';
-import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
 import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
 import { TerritoryDetailsModal } from '@/components/organizations/TerritoryDetailsModal';
 import { TerritoryEditModal } from '@/components/organizations/TerritoryEditModal';
 import { OrganizationsSidebar } from '@/components/organizations/OrganizationsSidebar';
 import { useOrganizations } from '@/hooks/useOrganizations';
 import type { Coordinates, Territory } from '@/types/organizations';
+
+// Import dynamique pour éviter les erreurs SSR avec Leaflet
+const TerritoryMapEditor = dynamicImport(
+  () => import('@/components/organizations/TerritoryMapEditorSimple').then(mod => ({ default: mod.TerritoryMapEditor })),
+  { ssr: false }
+);
 
 export default function OrganizationsPage() {
   const {
@@ -52,6 +58,9 @@ export default function OrganizationsPage() {
 
   // Écouter Cmd+Z / Ctrl+Z pour annuler le dernier point
   useEffect(() => {
+    // Vérifier que window existe (côté client uniquement)
+    if (typeof window === 'undefined') return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+Z (Mac) ou Ctrl+Z (Windows/Linux)
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && isDrawing && drawingPoints.length > 1) {
