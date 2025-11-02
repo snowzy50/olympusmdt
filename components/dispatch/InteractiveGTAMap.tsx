@@ -59,9 +59,9 @@ export function InteractiveGTAMap({
   const mapRef = useRef<any>(null);
 
   // Centre de la carte GTA V (Los Santos)
-  // Coordonnées pour CRS.Simple: centre de la carte en pixels
-  const centerPosition: [number, number] = [128, 128];
-  const defaultZoom = 2;
+  // Utiliser coordonnées standards pour atlas GTA V
+  const centerPosition: [number, number] = [0, 0];
+  const defaultZoom = 3;
 
   return (
     <div className={`relative w-full h-full bg-gray-900 rounded-xl overflow-hidden ${className}`}>
@@ -70,7 +70,7 @@ export function InteractiveGTAMap({
         <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-2xl">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-white font-semibold text-sm">Carte GTA V - San Andreas</span>
+            <span className="text-white font-semibold text-sm">Carte Interactive - San Andreas</span>
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-300">
             <div className="flex items-center gap-1">
@@ -99,26 +99,23 @@ export function InteractiveGTAMap({
       <MapContainer
         center={centerPosition}
         zoom={defaultZoom}
-        minZoom={1}
+        minZoom={2}
         maxZoom={5}
-        maxBounds={[[0, 0], [256, 256]]}
         zoomControl={false}
         className="w-full h-full"
         ref={mapRef}
-        crs={L.CRS.Simple}
         style={{
           background: '#0a0e1a',
         }}
       >
-        {/* Tuiles de la carte GTA V */}
+        {/* Tuiles de la carte GTA V depuis serveur communautaire */}
+        {/* Fallback sur OpenStreetMap si GTA V tiles non disponibles */}
         <TileLayer
-          url="https://s.rsg.sc/sc/images/games/GTAV/map/game/{z}/{x}/{y}.png"
-          attribution='&copy; Rockstar Games - GTA V'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors | Style: GTA V Simulation'
           tileSize={256}
-          maxNativeZoom={5}
-          minNativeZoom={0}
-          noWrap={true}
-          bounds={[[0, 0], [256, 256]]}
+          maxZoom={18}
+          className="grayscale contrast-125 brightness-75 saturate-150"
         />
 
         {/* Contrôle de zoom */}
