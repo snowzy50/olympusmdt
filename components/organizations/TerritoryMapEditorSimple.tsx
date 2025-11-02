@@ -6,20 +6,22 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { MapContainer, ImageOverlay, Polygon, Marker, Popup, useMapEvents } from 'react-leaflet';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { MapContainer, ImageOverlay, Polygon, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L, { LatLngBounds, DivIcon } from 'leaflet';
 import type { Territory, TerritoryPOI, Organization, Coordinates } from '@/types/organizations';
 import { poiTypeIcons } from '@/types/organizations';
 
 // Fix Leaflet default icon issue
 import 'leaflet/dist/leaflet.css';
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+if (typeof window !== 'undefined') {
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  });
+}
 
 interface TerritoryMapEditorProps {
   territories: Territory[];
@@ -55,6 +57,38 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
   return null;
 }
 
+// Composant pour sauvegarder et restaurer la position de la carte
+function MapViewPreserver({ viewRef }: { viewRef: React.MutableRefObject<{ center: L.LatLng; zoom: number } | null> }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Restaurer la position sauvegardée au montage
+    if (viewRef.current) {
+      console.log('[Map] Restauration position:', viewRef.current);
+      map.setView(viewRef.current.center, viewRef.current.zoom, { animate: false });
+    }
+
+    // Sauvegarder la position à chaque mouvement
+    const handleMoveEnd = () => {
+      viewRef.current = {
+        center: map.getCenter(),
+        zoom: map.getZoom(),
+      };
+      console.log('[Map] Position sauvegardée:', viewRef.current);
+    };
+
+    map.on('moveend', handleMoveEnd);
+    map.on('zoomend', handleMoveEnd);
+
+    return () => {
+      map.off('moveend', handleMoveEnd);
+      map.off('zoomend', handleMoveEnd);
+    };
+  }, [map, viewRef]);
+
+  return null;
+}
+
 export function TerritoryMapEditor({
   territories,
   pois,
@@ -66,6 +100,7 @@ export function TerritoryMapEditor({
   className = '',
 }: TerritoryMapEditorProps) {
   const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
+  const mapViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
 
   // Dimensions de la carte GTA V
   const mapWidth = 8192;
@@ -234,6 +269,9 @@ export function TerritoryMapEditor({
       >
         {/* Image de fond */}
         <ImageOverlay key={currentMapType} url={mapTypes[currentMapType]} bounds={bounds} opacity={1} />
+
+        {/* Préserver la position de la carte */}
+        <MapViewPreserver viewRef={mapViewRef} />
 
         {/* Handler de clic */}
         <MapClickHandler onMapClick={handleMapClick} />
