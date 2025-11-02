@@ -38,7 +38,8 @@ const eventTypeIcons: Record<CalendarEvent['category'], string> = {
   other: '📌',
 };
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string }> = {
+  planned: { label: 'Planifié', color: 'bg-blue-500/20 text-blue-300' },
   scheduled: { label: 'Planifié', color: 'bg-blue-500/20 text-blue-300' },
   in_progress: { label: 'En cours', color: 'bg-green-500/20 text-green-300' },
   completed: { label: 'Terminé', color: 'bg-gray-500/20 text-gray-300' },
@@ -134,8 +135,8 @@ export function EventsWidget({ events, total, agencyId, isConnected }: EventsWid
                         <p className="text-xs text-gray-400">{eventTypeLabels[event.category]}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusConfig[event.status].color} flex-shrink-0`}>
-                      {statusConfig[event.status].label}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusConfig[event.status]?.color || 'bg-gray-500/20 text-gray-300'} flex-shrink-0`}>
+                      {statusConfig[event.status]?.label || 'Inconnu'}
                     </span>
                   </div>
 
@@ -143,11 +144,11 @@ export function EventsWidget({ events, total, agencyId, isConnected }: EventsWid
                   <div className="flex items-center gap-3 mb-2 text-xs">
                     <div className="flex items-center gap-1 text-blue-400">
                       <Calendar className="w-3 h-3" />
-                      <span>{formatDateParis(event.date)}</span>
+                      <span>{formatDateParis(event.start_date)}</span>
                     </div>
                     <div className="flex items-center gap-1 text-purple-400">
                       <Clock className="w-3 h-3" />
-                      <span>{formatTimeParis(event.date)}</span>
+                      <span>{formatTimeParis(event.start_date)}</span>
                     </div>
                   </div>
 

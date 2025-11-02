@@ -54,13 +54,13 @@ const callTypeIcons: Record<DispatchCall['call_type'], string> = {
   other: '📍',
 };
 
-const priorityConfig = {
+const priorityConfig: Record<string, { label: string; color: string; borderColor: string }> = {
   code1: { label: 'Code 1', color: 'bg-red-500/20 text-red-300', borderColor: 'border-l-red-500' },
   code2: { label: 'Code 2', color: 'bg-orange-500/20 text-orange-300', borderColor: 'border-l-orange-500' },
   code3: { label: 'Code 3', color: 'bg-blue-500/20 text-blue-300', borderColor: 'border-l-blue-500' },
 };
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'En attente', color: 'bg-yellow-500/20 text-yellow-300', icon: Clock },
   dispatched: { label: 'Assigné', color: 'bg-blue-500/20 text-blue-300', icon: Radio },
   en_route: { label: 'En route', color: 'bg-purple-500/20 text-purple-300', icon: MapPin },
@@ -131,8 +131,9 @@ export function DispatchWidget({ calls, total, agencyId, isConnected }: Dispatch
             </motion.div>
           ) : (
             calls.map((call) => {
-              const StatusIcon = statusConfig[call.status].icon;
-              const priorityInfo = priorityConfig[call.priority];
+              const statusInfo = statusConfig[call.status] || statusConfig.pending;
+              const StatusIcon = statusInfo.icon;
+              const priorityInfo = priorityConfig[call.priority] || priorityConfig.code3;
 
               return (
                 <motion.div
@@ -144,7 +145,7 @@ export function DispatchWidget({ calls, total, agencyId, isConnected }: Dispatch
                   className={`
                     group relative overflow-hidden
                     bg-gradient-to-br from-gray-800/90 to-gray-800/70 backdrop-blur-sm
-                    rounded-lg border-l-4 ${priorityInfo.borderColor}
+                    rounded-lg border-l-4 ${priorityInfo?.borderColor || 'border-l-gray-500'}
                     border-t border-r border-b border-gray-700
                     p-3 cursor-pointer transition-all duration-200
                     hover:shadow-lg hover:shadow-orange-500/10 hover:-translate-y-1
@@ -170,12 +171,12 @@ export function DispatchWidget({ calls, total, agencyId, isConnected }: Dispatch
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${priorityInfo.color} flex items-center gap-1`}>
-                          {priorityInfo.label}
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${priorityInfo?.color || 'bg-gray-500/20 text-gray-300'} flex items-center gap-1`}>
+                          {priorityInfo?.label || 'Normal'}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusConfig[call.status].color} flex items-center gap-1`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo?.color || 'bg-gray-500/20 text-gray-300'} flex items-center gap-1`}>
                           <StatusIcon className="w-3 h-3" />
-                          {statusConfig[call.status].label}
+                          {statusInfo?.label || 'Inconnu'}
                         </span>
                       </div>
                     </div>
