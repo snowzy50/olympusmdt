@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { LogIn, Shield, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signInWithDiscord } from '@/lib/auth/supabase-auth';
 
 function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,15 +26,13 @@ function LoginContent() {
     setError(null);
 
     try {
-      const result = await signIn('discord', {
-        callbackUrl: '/agency-selection',
-        redirect: true,
-      });
+      const { error: authError } = await signInWithDiscord('/agency-selection');
 
-      if (result?.error) {
+      if (authError) {
         setError('Échec de la connexion. Veuillez réessayer.');
         setIsLoading(false);
       }
+      // Si pas d'erreur, Supabase redirige automatiquement
     } catch (err) {
       console.error('Login error:', err);
       setError('Une erreur s\'est produite. Veuillez réessayer.');

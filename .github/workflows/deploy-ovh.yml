@@ -1,0 +1,105 @@
+name: Deploy to OVH via FTP
+
+on:
+  push:
+    branches:
+      - main  # Déploiement automatique sur push to main
+  workflow_dispatch:  # Permet déclenchement manuel
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Récupérer le code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Installer Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # 3. Installer les dépendances
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Build l'application avec variables d'environnement
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+
+      # 5. Copier .htaccess dans out/
+      - name: Copy .htaccess to output
+        run: |
+          if [ -f "public/.htaccess" ]; then
+            cp public/.htaccess out/.htaccess
+            echo "✅ .htaccess copied to out/"
+          else
+            echo "⚠️ .htaccess not found in public/"
+          fi
+
+      # 6. Vérifier que les credentials FTP sont configurés
+      - name: Check FTP credentials
+        id: check-ftp
+        run: |
+          if [ -n "${{ secrets.OVH_FTP_USER }}" ] && [ -n "${{ secrets.OVH_FTP_PASS }}" ] && [ -n "${{ secrets.OVH_FTP_SERVER }}" ]; then
+            echo "ftp_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "ftp_available=false" >> $GITHUB_OUTPUT
+            echo "⚠️ FTP credentials not configured. Skipping deployment."
+          fi
+
+      # 7. Déployer via FTP
+      - name: Deploy to OVH via FTP
+        if: steps.check-ftp.outputs.ftp_available == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.OVH_FTP_SERVER }}
+          username: ${{ secrets.OVH_FTP_USER }}
+          password: ${{ secrets.OVH_FTP_PASS }}
+          local-dir: ./out/
+          server-dir: /www/
+          dangerous-clean-slate: false  # ⚠️ Ne supprime PAS tout avant upload (sécurité)
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+
+      # 8. Vérifier que le site répond
+      - name: Verify deployment
+        if: steps.check-ftp.outputs.ftp_available == 'true'
+        run: |
+          echo "Testing deployment..."
+          SITE_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}"
+
+          if [ -z "$SITE_URL" ]; then
+            echo "⚠️ NEXT_PUBLIC_APP_URL not configured, skipping verification"
+            exit 0
+          fi
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL" || echo "000")
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Deployment successful!"
+          elif [ "$HTTP_CODE" = "000" ]; then
+            echo "⚠️ Could not reach site (network error)"
+          else
+            echo "⚠️ Deployment may have issues (HTTP $HTTP_CODE)"
+          fi
+
+      # 9. Summary
+      - name: Deployment summary
+        if: steps.check-ftp.outputs.ftp_available == 'true'
+        run: |
+          echo "🚀 Deployment completed!"
+          echo "📦 Build size: $(du -sh out/ | cut -f1)"
+          echo "🌐 Site URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}"
+          echo "⏰ Deployed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"

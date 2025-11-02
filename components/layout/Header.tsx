@@ -2,11 +2,14 @@
 
 import { Search, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { signOut, useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth/supabase-auth';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { data: session } = useSession();
+  const { data: session } = useAuth();
+  const router = useRouter();
 
   return (
     <header className="h-20 glass-strong border-b border-white/10 flex items-center justify-between px-8">
@@ -68,7 +71,8 @@ export default function Header() {
                 <div className="my-2 h-px bg-white/10"></div>
                 <button
                   onClick={async () => {
-                    await signOut({ callbackUrl: '/login' });
+                    await signOut();
+                    router.push('/login');
                   }}
                   className="w-full text-left px-4 py-2 rounded-lg hover:bg-white/5 transition-colors text-sm text-accent-red hover:text-accent-red"
                 >

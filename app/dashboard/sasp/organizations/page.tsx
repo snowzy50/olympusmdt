@@ -42,6 +42,15 @@ export default function OrganizationsPage() {
   const [editingTerritory, setEditingTerritory] = useState<Territory | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Wrappers pour correspondre aux types attendus par les modals
+  const handleCreateTerritory = async (territory: Omit<Territory, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
+    await createTerritory(territory);
+  };
+
+  const handleAddMember = async (member: Omit<any, 'id' | 'joined_at'>): Promise<void> => {
+    await addMember(member);
+  };
+
   // Annuler le dernier point
   const handleUndoLastPoint = () => {
     if (drawingPoints.length > 1) {
@@ -203,9 +212,9 @@ export default function OrganizationsPage() {
         onClose={handleCloseModal}
         organizations={organizations}
         clickedCoordinates={clickedCoordinates}
-        onCreateTerritory={createTerritory}
+        onCreateTerritory={handleCreateTerritory}
         onCreateOrganization={createOrganization}
-        onAddMember={addMember}
+        onAddMember={handleAddMember}
         currentPoints={drawingPoints}
         onUndoLastPoint={handleUndoLastPoint}
       />

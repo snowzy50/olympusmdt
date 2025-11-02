@@ -2,8 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth/supabase-auth';
 import { getAgencyById } from '@/config/agencies';
 import { useSidebar } from '@/contexts/SidebarContext';
 import Image from 'next/image';
@@ -72,7 +73,8 @@ const adminSection: NavItem[] = [];
 const Sidebar: React.FC = () => {
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session } = useAuth();
 
   // Extraire l'agence depuis l'URL (/dashboard/{agency}/...)
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -221,7 +223,8 @@ const Sidebar: React.FC = () => {
         {/* Déconnexion */}
         <button
           onClick={async () => {
-            await signOut({ callbackUrl: '/login' });
+            await signOut();
+            router.push('/login');
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-red-600/10 hover:text-red-400 transition-colors ${
             isCollapsed ? 'justify-center' : ''

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, LogOut, Loader2, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth/supabase-auth';
 import { AGENCIES, type AgencyConfig } from '@/config/agencies';
 
 // Utiliser le type depuis le fichier de configuration
@@ -14,7 +15,7 @@ export default function AgencySelectionPage() {
   const [userAgencies, setUserAgencies] = useState<Agency[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuth();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -44,7 +45,8 @@ export default function AgencySelectionPage() {
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/login' });
+    await signOut();
+    router.push('/login');
   };
 
   if (isLoading || status === 'loading') {

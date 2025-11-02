@@ -1,0 +1,90 @@
+# Configuration Apache pour SPA (Single Page Application)
+# Olympus MDT - Créé par Snowzy
+
+<IfModule mod_rewrite.c>
+  # Activer le module de réécriture
+  RewriteEngine On
+  RewriteBase /
+
+  # Forcer HTTPS (recommandé pour production)
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Ne pas réécrire les fichiers existants
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+
+  # Rediriger tout vers index.html pour le routing React
+  RewriteRule ^.*$ /index.html [L,QSA]
+</IfModule>
+
+# Désactiver le listing des répertoires
+Options -Indexes
+
+# Configuration des types MIME
+<IfModule mod_mime.c>
+  AddType application/javascript js mjs
+  AddType application/json json map
+  AddType image/svg+xml svg svgz
+  AddType text/css css
+</IfModule>
+
+# Compression Gzip pour améliorer les performances
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# Cache navigateur pour les assets statiques
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Images
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+
+  # CSS et JS
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+
+  # Fonts
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/ttf "access plus 1 year"
+
+  # HTML (pas de cache pour l'index.html)
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Sécurité - Headers
+<IfModule mod_headers.c>
+  # Protection XSS
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Empêcher le MIME sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Forcer le téléchargement des fichiers potentiellement dangereux
+  Header set X-Download-Options "noopen"
+
+  # Désactiver le cache pour index.html
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+# Bloquer l'accès aux fichiers sensibles
+<FilesMatch "(^\.env|\.env\..+|\.git.*|package\.json|tsconfig\.json|next\.config\..+)$">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>

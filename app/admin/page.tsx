@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signInWithCredentials } from '@/lib/auth/supabase-auth';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
@@ -19,16 +19,12 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
-      });
+      const result = await signInWithCredentials(username, password);
 
-      if (result?.error) {
-        setError('Identifiants incorrects');
+      if (!result.success) {
+        setError(result.error || 'Identifiants incorrects');
         setIsLoading(false);
-      } else if (result?.ok) {
+      } else {
         router.push('/agency-selection');
       }
     } catch (err) {
