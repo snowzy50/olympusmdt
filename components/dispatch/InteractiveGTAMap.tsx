@@ -51,6 +51,15 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
   return null;
 }
 
+// Types de cartes disponibles
+const mapTypes = {
+  atlas: 'https://www.bragitoff.com/wp-content/uploads/2015/11/GTAV_ATLUS_8192x8192.png',
+  satellite: 'https://www.bragitoff.com/wp-content/uploads/2015/11/GTAV-HD-MAP-satellite.jpg',
+  road: 'https://www.bragitoff.com/wp-content/uploads/2015/11/GTAV-HD-MAP-roadmap.jpg',
+};
+
+type MapType = keyof typeof mapTypes;
+
 function InteractiveGTAMapComponent({
   calls,
   onMapClick,
@@ -58,11 +67,12 @@ function InteractiveGTAMapComponent({
   className = '',
 }: InteractiveGTAMapProps) {
   const mapRef = useRef<any>(null);
+  const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
 
   // Dimensions de la carte GTA V (en pixels)
-  // La carte fait 16384x16384 pixels au niveau de zoom max
-  const mapWidth = 8000;
-  const mapHeight = 8000;
+  // La carte fait 8192x8192 pixels pour ces images HD
+  const mapWidth = 8192;
+  const mapHeight = 8192;
 
   // Bounds de la carte en coordonnées Leaflet
   const bounds = new LatLngBounds(
@@ -136,12 +146,10 @@ function InteractiveGTAMapComponent({
   // Convertir les coordonnées de l'appel en position sur la carte
   const getMarkerPosition = (call: DispatchCall): [number, number] => {
     // Convertir les coordonnées lat/lng en position pixel sur la carte
-    // Pour l'instant, on utilise les coordonnées directement avec un mapping simple
-
     // Les coordonnées GTA V sont généralement entre -4000 et 4000 pour X et Y
-    // On les mappe sur notre grille 0-8000
-    const x = ((call.location.lng + 4000) / 8000) * mapWidth;
-    const y = ((call.location.lat + 4000) / 8000) * mapHeight;
+    // On les mappe sur notre grille 0-8192
+    const x = ((call.location.lng + 4096) / 8192) * mapWidth;
+    const y = ((call.location.lat + 4096) / 8192) * mapHeight;
 
     // Inverser Y car Leaflet utilise top-down
     return [mapHeight - y, x];
@@ -151,8 +159,8 @@ function InteractiveGTAMapComponent({
   const pixelToGTACoords = (lat: number, lng: number): { lat: number; lng: number } => {
     // Inverser la conversion
     const y = mapHeight - lat;
-    const gtaLat = (y / mapHeight) * 8000 - 4000;
-    const gtaLng = (lng / mapWidth) * 8000 - 4000;
+    const gtaLat = (y / mapHeight) * 8192 - 4096;
+    const gtaLng = (lng / mapWidth) * 8192 - 4096;
 
     return { lat: gtaLat, lng: gtaLng };
   };
@@ -173,6 +181,41 @@ function InteractiveGTAMapComponent({
             <span className="text-white font-semibold text-sm">Carte Interactive GTA V</span>
           </div>
           <div className="text-[10px] text-gray-400 mb-2">Cliquez sur la carte pour créer un appel</div>
+
+          {/* Sélecteur de type de carte */}
+          <div className="flex gap-1.5 mb-2">
+            <button
+              onClick={() => setCurrentMapType('satellite')}
+              className={`px-2 py-1 text-[10px] rounded transition-all ${
+                currentMapType === 'satellite'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              🛰️ Satellite
+            </button>
+            <button
+              onClick={() => setCurrentMapType('road')}
+              className={`px-2 py-1 text-[10px] rounded transition-all ${
+                currentMapType === 'road'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              🗺️ Routes
+            </button>
+            <button
+              onClick={() => setCurrentMapType('atlas')}
+              className={`px-2 py-1 text-[10px] rounded transition-all ${
+                currentMapType === 'atlas'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              📖 Atlas
+            </button>
+          </div>
+
           <div className="flex items-center gap-3 text-xs text-gray-300">
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-red-500" />
@@ -213,9 +256,10 @@ function InteractiveGTAMapComponent({
         zoomControl={true}
         attributionControl={false}
       >
-        {/* Image de la carte GTA V */}
+        {/* Image de la carte GTA V - changement dynamique selon le type */}
         <ImageOverlay
-          url="https://i.imgur.com/1mXThoK.jpg"
+          key={currentMapType}
+          url={mapTypes[currentMapType]}
           bounds={bounds}
           opacity={1}
         />
