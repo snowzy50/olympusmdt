@@ -161,7 +161,7 @@ export default function AccountingPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
+          <Button variant="secondary" className="gap-2">
             <Download className="w-4 h-4" />
             Exporter
           </Button>

@@ -299,7 +299,7 @@ export default function AnkleMonitorsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 ml-4">
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="secondary" size="sm" className="gap-2">
                     <MapPin className="w-4 h-4" />
                     Localiser
                   </Button>
