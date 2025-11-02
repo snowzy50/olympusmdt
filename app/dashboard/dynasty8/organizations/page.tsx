@@ -1,0 +1,128 @@
+/**
+ * Page de gestion des organisations et territoires
+ * Créé par: Snowzy
+ * Features: Workflow simplifié - clic sur carte → modal création
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import { Target } from 'lucide-react';
+import { TerritoryMapEditor } from '@/components/organizations/TerritoryMapEditorSimple';
+import { TerritoryCreationModal } from '@/components/organizations/TerritoryCreationModal';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import type { Coordinates } from '@/types/organizations';
+
+export default function OrganizationsPage() {
+  const {
+    organizations,
+    territories,
+    pois,
+    isLoading,
+    isConnected,
+    createOrganization,
+    createTerritory,
+    addMember,
+  } = useOrganizations();
+
+  const [showModal, setShowModal] = useState(false);
+  const [clickedCoordinates, setClickedCoordinates] = useState<Coordinates | null>(null);
+
+  // Au clic sur la carte
+  const handleMapClick = (lat: number, lng: number) => {
+    setClickedCoordinates({ lat, lng });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setClickedCoordinates(null);
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-950">
+      {/* Header minimal */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Target className="w-6 h-6 text-red-500" />
+              Carte des Territoires
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Cliquez sur la carte pour créer un territoire
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                }`}
+              />
+              <span className="text-xs text-gray-300">
+                {isConnected ? 'Connecté' : 'Déconnecté'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats rapides */}
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="bg-gradient-to-br from-blue-500/20 to-blue-700/20 border border-blue-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="w-4 h-4 text-blue-400" />
+              <span className="text-xs text-blue-400 font-medium">Organisations</span>
+            </div>
+            <div className="text-2xl font-bold text-white">{organizations.length}</div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-500/20 to-purple-700/20 border border-purple-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="w-4 h-4 text-purple-400" />
+              <span className="text-xs text-purple-400 font-medium">Territoires</span>
+            </div>
+            <div className="text-2xl font-bold text-white">{territories.length}</div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-500/20 to-orange-700/20 border border-orange-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="w-4 h-4 text-orange-400" />
+              <span className="text-xs text-orange-400 font-medium">Points d'intérêt</span>
+            </div>
+            <div className="text-2xl font-bold text-white">{pois.length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Carte plein écran */}
+      <div className="flex-1 p-4">
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center bg-gray-900/50 rounded-xl">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-gray-400">Chargement de la carte...</p>
+            </div>
+          </div>
+        ) : (
+          <TerritoryMapEditor
+            territories={territories}
+            pois={pois}
+            organizations={organizations}
+            onMapClick={handleMapClick}
+            className="h-full"
+          />
+        )}
+      </div>
+
+      {/* Modal de création */}
+      <TerritoryCreationModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        organizations={organizations}
+        clickedCoordinates={clickedCoordinates}
+        onCreateTerritory={createTerritory}
+        onCreateOrganization={createOrganization}
+        onAddMember={addMember}
+      />
+    </div>
+  );
+}
