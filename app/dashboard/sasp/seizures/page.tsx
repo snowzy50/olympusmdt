@@ -12,6 +12,8 @@ import {
   Eye,
   Edit,
   Trash2,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 
 /**
@@ -53,9 +55,26 @@ export default function SeizuresPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingSeizure, setEditingSeizure] = useState<Seizure | null>(null);
+  const [viewingSeizure, setViewingSeizure] = useState<Seizure | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Seizure>>({
+    type: 'weapons',
+    description: '',
+    quantity: 1,
+    unit: '',
+    estimatedValue: 0,
+    seizedBy: '',
+    officerId: '',
+    location: '',
+    status: 'stored',
+    caseNumber: '',
+  });
 
   // Données de démonstration
-  const [seizures] = useState<Seizure[]>([
+  const [seizures, setSeizures] = useState<Seizure[]>([
     {
       id: '1',
       seizureNumber: 'SEZ-2024-001',
@@ -115,6 +134,67 @@ export default function SeizuresPage() {
 
   const totalValue = filteredSeizures.reduce((sum, s) => sum + s.estimatedValue, 0);
 
+  // Handlers
+  const handleCreate = () => {
+    setEditingSeizure(null);
+    setFormData({
+      type: 'weapons',
+      description: '',
+      quantity: 1,
+      unit: '',
+      estimatedValue: 0,
+      seizedBy: '',
+      officerId: '',
+      location: '',
+      status: 'stored',
+      caseNumber: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (seizure: Seizure) => {
+    setViewingSeizure(seizure);
+  };
+
+  const handleEdit = (seizure: Seizure) => {
+    setEditingSeizure(seizure);
+    setFormData(seizure);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      setSeizures(seizures.filter((s) => s.id !== deletingId));
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingSeizure) {
+      setSeizures(
+        seizures.map((s) =>
+          s.id === editingSeizure.id ? { ...s, ...formData } as Seizure : s
+        )
+      );
+    } else {
+      const newSeizure: Seizure = {
+        id: Date.now().toString(),
+        seizureNumber: `SEZ-${new Date().getFullYear()}-${String(seizures.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString(),
+        ...formData as Seizure,
+      };
+      setSeizures([...seizures, newSeizure]);
+    }
+    setShowModal(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -125,7 +205,7 @@ export default function SeizuresPage() {
             Gestion des saisies : armes, stupéfiants, véhicules et biens divers
           </p>
         </div>
-        <Button variant="primary" className="gap-2">
+        <Button variant="primary" className="gap-2" onClick={handleCreate}>
           <Plus className="w-4 h-4" />
           Nouvelle saisie
         </Button>
@@ -295,13 +375,25 @@ export default function SeizuresPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleView(seizure)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Voir les détails"
+                        >
                           <Eye className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleEdit(seizure)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Modifier"
+                        >
                           <Edit className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleDelete(seizure.id)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
                           <Trash2 className="w-4 h-4 text-error-500" />
                         </button>
                       </div>
@@ -320,6 +412,308 @@ export default function SeizuresPage() {
           )}
         </div>
       </Card>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
+                {editingSeizure ? 'Modifier la saisie' : 'Nouvelle saisie'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Type de saisie *
+                </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as Seizure['type'] })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="weapons">Armes</option>
+                  <option value="drugs">Stupéfiants</option>
+                  <option value="vehicle">Véhicules</option>
+                  <option value="goods">Biens divers</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Description *
+                </label>
+                <input
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Quantité *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Unité *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    placeholder="Ex: unité, grammes, kg"
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Valeur estimée ($) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.estimatedValue}
+                  onChange={(e) => setFormData({ ...formData, estimatedValue: parseInt(e.target.value) })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Agent saisissant *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.seizedBy}
+                    onChange={(e) => setFormData({ ...formData, seizedBy: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Matricule *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.officerId}
+                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Lieu de la saisie *
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Statut *
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as Seizure['status'] })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="stored">Stocké</option>
+                    <option value="evidence">Pièce à conviction</option>
+                    <option value="destroyed">Détruit</option>
+                    <option value="returned">Restitué</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Numéro de dossier
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.caseNumber}
+                    onChange={(e) => setFormData({ ...formData, caseNumber: e.target.value })}
+                    placeholder="Optionnel"
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingSeizure ? 'Mettre à jour' : 'Créer la saisie'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingSeizure && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Détails de la saisie</h2>
+              <button
+                onClick={() => setViewingSeizure(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-bold text-white">{viewingSeizure.description}</h3>
+                <Badge variant={seizureTypeLabels[viewingSeizure.type].color as any}>
+                  {seizureTypeLabels[viewingSeizure.type].label}
+                </Badge>
+                <Badge variant={statusLabels[viewingSeizure.status].color as any}>
+                  {statusLabels[viewingSeizure.status].label}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400">Numéro de saisie</p>
+                  <p className="text-lg font-medium text-white">{viewingSeizure.seizureNumber}</p>
+                </div>
+                {viewingSeizure.caseNumber && (
+                  <div>
+                    <p className="text-sm text-gray-400">Numéro de dossier</p>
+                    <p className="text-lg font-medium text-white">{viewingSeizure.caseNumber}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-400">Date de saisie</p>
+                  <p className="text-lg font-medium text-white">
+                    {new Date(viewingSeizure.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Lieu</p>
+                  <p className="text-lg font-medium text-white">{viewingSeizure.location}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Quantité</p>
+                  <p className="text-lg font-medium text-white">
+                    {viewingSeizure.quantity} {viewingSeizure.unit}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Valeur estimée</p>
+                  <p className="text-lg font-medium text-success-500">
+                    ${viewingSeizure.estimatedValue.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Agent saisissant</p>
+                  <p className="text-lg font-medium text-white">
+                    {viewingSeizure.seizedBy} ({viewingSeizure.officerId})
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewingSeizure(null);
+                    handleEdit(viewingSeizure);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </Button>
+                <Button variant="ghost" onClick={() => setViewingSeizure(null)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-error-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-error-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Confirmer la suppression</h3>
+                  <p className="text-sm text-gray-400">Cette action est irréversible</p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Êtes-vous sûr de vouloir supprimer cette saisie ? Toutes les données seront
+                définitivement perdues.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+                  Supprimer
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingId(null);
+                  }}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

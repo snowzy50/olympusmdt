@@ -13,6 +13,9 @@ import {
   Eye,
   Edit,
   Filter,
+  X,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 /**
@@ -58,9 +61,24 @@ export default function ReportsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [viewingReport, setViewingReport] = useState<Report | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Report>>({
+    type: 'operation',
+    title: '',
+    officer: '',
+    officerId: '',
+    location: '',
+    status: 'draft',
+    priority: 'medium',
+    summary: '',
+  });
 
   // Données de démonstration
-  const [reports] = useState<Report[]>([
+  const [reports, setReports] = useState<Report[]>([
     {
       id: '1',
       type: 'operation',
@@ -112,6 +130,66 @@ export default function ReportsPage() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
+  // Handlers
+  const handleCreate = () => {
+    setEditingReport(null);
+    setFormData({
+      type: 'operation',
+      title: '',
+      officer: '',
+      officerId: '',
+      location: '',
+      status: 'draft',
+      priority: 'medium',
+      summary: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (report: Report) => {
+    setViewingReport(report);
+  };
+
+  const handleEdit = (report: Report) => {
+    setEditingReport(report);
+    setFormData(report);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      setReports(reports.filter((r) => r.id !== deletingId));
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingReport) {
+      setReports(
+        reports.map((r) =>
+          r.id === editingReport.id ? { ...r, ...formData } as Report : r
+        )
+      );
+    } else {
+      const typePrefix = formData.type === 'operation' ? 'OP' : formData.type === 'shooting' ? 'SHO' : 'ARR';
+      const newReport: Report = {
+        id: Date.now().toString(),
+        reportNumber: `RPT-${typePrefix}-${new Date().getFullYear()}-${String(reports.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString(),
+        ...formData as Report,
+      };
+      setReports([...reports, newReport]);
+    }
+    setShowModal(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -127,7 +205,7 @@ export default function ReportsPage() {
             <Download className="w-4 h-4" />
             Exporter
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouveau rapport
           </Button>
@@ -271,14 +349,26 @@ export default function ReportsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 ml-4">
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleView(report)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Voir les détails"
+                  >
                     <Eye className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleEdit(report)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Modifier"
+                  >
                     <Edit className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-                    <Download className="w-4 h-4 text-gray-400" />
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-error-500" />
                   </button>
                 </div>
               </div>
@@ -293,6 +383,270 @@ export default function ReportsPage() {
           </Card>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
+                {editingReport ? 'Modifier le rapport' : 'Nouveau rapport'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Type de rapport *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Report['type'] })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="operation">Opération</option>
+                    <option value="shooting">Fusillade</option>
+                    <option value="arrest">Arrestation</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Priorité *
+                  </label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as Report['priority'] })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Titre du rapport *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Nom de l'agent *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.officer}
+                    onChange={(e) => setFormData({ ...formData, officer: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Matricule *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.officerId}
+                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Lieu *
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Statut *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Report['status'] })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="draft">Brouillon</option>
+                  <option value="submitted">Soumis</option>
+                  <option value="validated">Validé</option>
+                  <option value="archived">Archivé</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Résumé *
+                </label>
+                <textarea
+                  value={formData.summary}
+                  onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 h-32 resize-none"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingReport ? 'Mettre à jour' : 'Créer le rapport'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingReport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Détails du rapport</h2>
+              <button
+                onClick={() => setViewingReport(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-bold text-white">{viewingReport.title}</h3>
+                <Badge variant={reportTypeLabels[viewingReport.type].color as any}>
+                  {reportTypeLabels[viewingReport.type].label}
+                </Badge>
+                <Badge variant={reportStatusLabels[viewingReport.status].color as any}>
+                  {reportStatusLabels[viewingReport.status].label}
+                </Badge>
+                <Badge variant={priorityLabels[viewingReport.priority].color as any}>
+                  {priorityLabels[viewingReport.priority].label}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400">Numéro de rapport</p>
+                  <p className="text-lg font-medium text-white">{viewingReport.reportNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Date</p>
+                  <p className="text-lg font-medium text-white">
+                    {new Date(viewingReport.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Agent</p>
+                  <p className="text-lg font-medium text-white">
+                    {viewingReport.officer} ({viewingReport.officerId})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Lieu</p>
+                  <p className="text-lg font-medium text-white">{viewingReport.location}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-400 mb-2">Résumé</p>
+                <p className="text-white leading-relaxed">{viewingReport.summary}</p>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewingReport(null);
+                    handleEdit(viewingReport);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </Button>
+                <Button variant="ghost" onClick={() => setViewingReport(null)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-error-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-error-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Confirmer la suppression</h3>
+                  <p className="text-sm text-gray-400">Cette action est irréversible</p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Êtes-vous sûr de vouloir supprimer ce rapport ? Toutes les données seront
+                définitivement perdues.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+                  Supprimer
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingId(null);
+                  }}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
