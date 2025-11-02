@@ -75,6 +75,9 @@ class RealtimeSyncService {
   }
 
   private saveToLocalStorage(type: DataType): void {
+    // Skip localStorage during SSR
+    if (typeof window === 'undefined') return;
+
     const timer = this.debounceTimers.get(type);
     if (timer) {
       clearTimeout(timer);

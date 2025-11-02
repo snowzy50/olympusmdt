@@ -41,21 +41,31 @@ export function ComplaintsPageContent({ agencyId, agencyName }: ComplaintsPageCo
 
   // Charger les plaintes depuis localStorage
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.localStorage) return;
+
     const storageKey = `complaints_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored) {
         setComplaints(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading complaints:', error);
       }
+    } catch (error) {
+      console.error('Error loading complaints:', error);
     }
   }, [agencyId]);
 
   // Sauvegarder les plaintes dans localStorage
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.localStorage) return;
+
     const storageKey = `complaints_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(complaints));
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(complaints));
+    } catch (error) {
+      // Silently ignore localStorage errors during SSR
+    }
   }, [complaints, agencyId]);
 
   // Filtrer les plaintes
