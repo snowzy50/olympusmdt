@@ -3,8 +3,8 @@
 ## Variables NextAuth Requises
 
 ```bash
-# URL de votre application Vercel (remplacer par l'URL réelle)
-NEXTAUTH_URL=olympusmdt.vercel.app
+# URL de votre application Vercel (IMPORTANT: inclure https://)
+NEXTAUTH_URL=https://olympusmdt.vercel.app
 
 # Secret pour signer les JWT (générer avec: openssl rand -base64 32)
 NEXTAUTH_SECRET=votre-secret-genere-32-caracteres-minimum
