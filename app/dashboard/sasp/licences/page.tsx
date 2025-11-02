@@ -12,6 +12,7 @@ import {
   Eye,
   Edit,
   Trash2,
+  X,
 } from 'lucide-react';
 
 /**
@@ -51,9 +52,23 @@ export default function LicensesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingLicense, setEditingLicense] = useState<License | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Données de démonstration
-  const [licenses] = useState<License[]>([
+  // Form state
+  const [formData, setFormData] = useState<Partial<License>>({
+    citizenName: '',
+    citizenId: '',
+    type: 'car',
+    status: 'valid',
+    points: 12,
+    restrictions: '',
+  });
+
+  // Données
+  const [licenses, setLicenses] = useState<License[]>([
     {
       id: '1',
       citizenId: 'CIT-001',
@@ -113,65 +128,80 @@ export default function LicensesPage() {
     }
   };
 
+  // Fonctions CRUD
+  const handleCreate = () => {
+    setEditingLicense(null);
+    setFormData({
+      citizenName: '',
+      citizenId: '',
+      type: 'car',
+      status: 'valid',
+      points: 12,
+      restrictions: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleEdit = (license: License) => {
+    setEditingLicense(license);
+    setFormData(license);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      setLicenses(licenses.filter((l) => l.id !== deletingId));
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editingLicense) {
+      // Update existing license
+      setLicenses(
+        licenses.map((l) =>
+          l.id === editingLicense.id ? { ...l, ...formData } as License : l
+        )
+      );
+    } else {
+      // Create new license
+      const newLicense: License = {
+        id: Date.now().toString(),
+        licenseNumber: `LIC-${new Date().getFullYear()}-${String(licenses.length + 1).padStart(3, '0')}`,
+        issueDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 5))
+          .toISOString()
+          .split('T')[0],
+        ...formData as License,
+      };
+      setLicenses([...licenses, newLicense]);
+    }
+
+    setShowModal(false);
+    setEditingLicense(null);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Permis de conduire</h1>
-          <p className="text-gray-400">
-            Gestion des licences de conduite enregistrées
-          </p>
+          <p className="text-gray-400">Gestion des licences de conduite enregistrées</p>
         </div>
-        <Button variant="primary" className="gap-2">
+        <Button variant="primary" className="gap-2" onClick={handleCreate}>
           <Plus className="w-4 h-4" />
           Nouveau permis
         </Button>
       </div>
-
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom ou numéro..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="all">Tous les types</option>
-            <option value="car">Voiture</option>
-            <option value="motorcycle">Moto</option>
-            <option value="truck">Poids lourd</option>
-            <option value="boat">Bateau</option>
-            <option value="aircraft">Avion</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="valid">Valide</option>
-            <option value="suspended">Suspendu</option>
-            <option value="revoked">Révoqué</option>
-            <option value="expired">Expiré</option>
-          </select>
-        </div>
-      </Card>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -230,33 +260,60 @@ export default function LicensesPage() {
         </Card>
       </div>
 
+      {/* Filters */}
+      <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom ou numéro..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">Tous les types</option>
+            <option value="car">Voiture</option>
+            <option value="motorcycle">Moto</option>
+            <option value="truck">Poids lourd</option>
+            <option value="boat">Bateau</option>
+            <option value="aircraft">Avion</option>
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="valid">Valide</option>
+            <option value="suspended">Suspendu</option>
+            <option value="revoked">Révoqué</option>
+            <option value="expired">Expiré</option>
+          </select>
+        </div>
+      </Card>
+
       {/* Licenses List */}
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-700">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Numéro
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Citoyen
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Type
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Statut
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Points
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Expiration
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">
-                  Actions
-                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Numéro</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Citoyen</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Type</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Statut</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Points</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Expiration</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -270,9 +327,7 @@ export default function LicensesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-primary-500" />
-                        <span className="text-white font-medium">
-                          {license.licenseNumber}
-                        </span>
+                        <span className="text-white font-medium">{license.licenseNumber}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -282,9 +337,7 @@ export default function LicensesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-gray-300">
-                        {licenseTypeLabels[license.type]}
-                      </span>
+                      <span className="text-gray-300">{licenseTypeLabels[license.type]}</span>
                     </td>
                     <td className="px-6 py-4">
                       <Badge
@@ -318,10 +371,16 @@ export default function LicensesPage() {
                         <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
                           <Eye className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleEdit(license)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                        >
                           <Edit className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleDelete(license.id)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                        >
                           <Trash2 className="w-4 h-4 text-error-500" />
                         </button>
                       </div>
@@ -340,6 +399,163 @@ export default function LicensesPage() {
           )}
         </div>
       </Card>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
+                {editingLicense ? 'Modifier le permis' : 'Nouveau permis'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nom du citoyen
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.citizenName}
+                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Citoyen
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.citizenId}
+                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type de permis
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="car">Voiture</option>
+                    <option value="motorcycle">Moto</option>
+                    <option value="truck">Poids lourd</option>
+                    <option value="boat">Bateau</option>
+                    <option value="aircraft">Avion</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="valid">Valide</option>
+                    <option value="suspended">Suspendu</option>
+                    <option value="revoked">Révoqué</option>
+                    <option value="expired">Expiré</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Points
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="12"
+                    required
+                    value={formData.points}
+                    onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Restrictions (optionnel)
+                  </label>
+                  <textarea
+                    value={formData.restrictions}
+                    onChange={(e) => setFormData({ ...formData, restrictions: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" variant="primary">
+                  {editingLicense ? 'Mettre à jour' : 'Créer'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-200 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-error-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-error-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Confirmer la suppression</h3>
+                  <p className="text-sm text-gray-400">
+                    Cette action est irréversible
+                  </p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Êtes-vous sûr de vouloir supprimer ce permis de conduire ?
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Annuler
+                </Button>
+                <Button variant="destructive" onClick={confirmDelete}>
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

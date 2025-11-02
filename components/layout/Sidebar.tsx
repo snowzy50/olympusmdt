@@ -28,6 +28,14 @@ import {
   ChevronRight,
   Shield,
   LucideIcon,
+  FileText,
+  Crosshair,
+  Package,
+  DollarSign,
+  Stethoscope,
+  Activity,
+  MapPin,
+  TrendingUp,
 } from 'lucide-react';
 
 interface NavItem {
@@ -66,6 +74,27 @@ const dossierSection: NavItem[] = [
   { name: 'Cache Demo', icon: Database, href: '/dashboard/cache-demo', badge: null },
 ];
 
+// Nouveaux modules SASP
+const saspModules: NavItem[] = [
+  { name: 'Licences', icon: FileText, href: '/dashboard/licences', badge: null },
+  { name: 'Rapports', icon: Crosshair, href: '/dashboard/reports', badge: null },
+  { name: 'Saisies', icon: Package, href: '/dashboard/seizures', badge: null },
+  { name: 'Amendes', icon: DollarSign, href: '/dashboard/fines', badge: null },
+  { name: 'Bracelets électroniques', icon: Radio, href: '/dashboard/ankle-monitors', badge: null },
+];
+
+// Nouveaux modules SAMC
+const samcModules: NavItem[] = [
+  { name: 'Dossiers médicaux', icon: Stethoscope, href: '/dashboard/medical-records', badge: null },
+  { name: 'Certificats', icon: FileText, href: '/dashboard/certificates', badge: null },
+];
+
+// Nouveaux modules Dynasty8
+const dynasty8Modules: NavItem[] = [
+  { name: 'Propriétés', icon: MapPin, href: '/dashboard/properties', badge: null },
+  { name: 'Comptabilité', icon: TrendingUp, href: '/dashboard/accounting', badge: null },
+];
+
 // Section Administration (vide pour le moment)
 const adminSection: NavItem[] = [];
 
@@ -98,6 +127,23 @@ const Sidebar: React.FC = () => {
     const isAdminOnlyPage = item.href.includes('/logs') || item.href.includes('/cache-demo');
     return !isAdminOnlyPage || isAdmin;
   });
+
+  // Sélectionner les modules spécifiques à l'agence
+  const getAgencySpecificModules = () => {
+    switch (currentAgency) {
+      case 'sasp':
+        return saspModules;
+      case 'samc':
+      case 'safd':
+        return samcModules;
+      case 'dynasty8':
+        return dynasty8Modules;
+      default:
+        return [];
+    }
+  };
+
+  const agencyModules = getAgencySpecificModules();
 
   // Fonction pour rendre un item de navigation
   const renderNavItem = (item: NavItem) => {
@@ -211,9 +257,25 @@ const Sidebar: React.FC = () => {
             Dossiers
           </p>
         )}
-        <ul className="space-y-1">
+        <ul className="space-y-1 mb-6">
           {filteredDossierSection.map(renderNavItem)}
         </ul>
+
+        {/* Section Modules Spécifiques à l'Agence */}
+        {agencyModules.length > 0 && (
+          <>
+            {!isCollapsed && (
+              <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                {currentAgency === 'sasp' && 'Modules Police'}
+                {(currentAgency === 'samc' || currentAgency === 'safd') && 'Modules Médicaux'}
+                {currentAgency === 'dynasty8' && 'Modules Immobilier'}
+              </p>
+            )}
+            <ul className="space-y-1">
+              {agencyModules.map(renderNavItem)}
+            </ul>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
