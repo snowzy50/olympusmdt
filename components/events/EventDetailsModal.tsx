@@ -24,6 +24,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import type { CalendarEvent } from '@/services/eventsRealtimeService';
+import { formatDateParis, formatTimeParis } from '@/lib/dateUtils';
 
 interface EventDetailsModalProps {
   event: CalendarEvent | null;
@@ -89,7 +90,8 @@ export function EventDetailsModal({
   const priorityInfo = priorityConfig[event.priority];
 
   const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+    // Utiliser le fuseau horaire de Paris
+    return formatDateParis(date, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

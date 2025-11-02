@@ -22,6 +22,7 @@ import {
   Eye,
 } from 'lucide-react';
 import type { CalendarEvent } from '@/services/eventsRealtimeService';
+import { formatDateParis, formatTimeParis, isFuture, isPast } from '@/lib/dateUtils';
 
 interface EventCardProps {
   event: CalendarEvent;
@@ -73,23 +74,9 @@ export const EventCard = React.forwardRef<HTMLDivElement, EventCardProps>(
     const priorityInfo = priorityConfig[event.priority];
     const StatusIcon = statusInfo.icon;
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const isUpcoming = new Date(event.start_date) > new Date();
-  const isPast = new Date(event.end_date) < new Date();
+    // Utiliser le fuseau horaire de Paris pour toutes les dates
+    const isUpcoming = isFuture(event.start_date);
+    const isEventPast = isPast(event.end_date);
 
   return (
     <motion.div
@@ -146,12 +133,12 @@ export const EventCard = React.forwardRef<HTMLDivElement, EventCardProps>(
 
         {/* Informations principales */}
         <div className={`space-y-1 ${compact ? 'mb-2' : 'mb-3'}`}>
-          {/* Date et heure */}
+          {/* Date et heure (fuseau horaire Paris) */}
           <div className="flex items-center gap-1.5 text-xs">
             <Calendar className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
             <span className="text-gray-300 truncate">
-              {formatDate(event.start_date)}
-              {event.start_date !== event.end_date && ` - ${formatDate(event.end_date)}`}
+              {formatDateParis(event.start_date, { day: 'numeric', month: 'short', year: 'numeric' })}
+              {event.start_date !== event.end_date && ` - ${formatDateParis(event.end_date, { day: 'numeric', month: 'short', year: 'numeric' })}`}
             </span>
           </div>
 
@@ -159,7 +146,7 @@ export const EventCard = React.forwardRef<HTMLDivElement, EventCardProps>(
             <div className="flex items-center gap-1.5 text-xs">
               <Clock className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
               <span className="text-gray-300 truncate">
-                {formatTime(event.start_date)} - {formatTime(event.end_date)}
+                {formatTimeParis(event.start_date)} - {formatTimeParis(event.end_date)}
               </span>
             </div>
           )}
@@ -191,7 +178,7 @@ export const EventCard = React.forwardRef<HTMLDivElement, EventCardProps>(
                 À venir
               </span>
             )}
-            {isPast && event.status !== 'completed' && event.status !== 'cancelled' && (
+            {isEventPast && event.status !== 'completed' && event.status !== 'cancelled' && (
               <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-[10px] font-medium flex items-center gap-1">
                 <AlertCircle className="w-2.5 h-2.5" />
                 En retard

@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { eventsRealtimeService, type CalendarEvent } from '@/services/eventsRealtimeService';
+import { getNowInParis, isFuture } from '@/lib/dateUtils';
 
 interface UseEventsOptions {
   autoConnect?: boolean;
@@ -161,14 +162,26 @@ export function useEvents(options: UseEventsOptions = {}) {
   );
 
   /**
-   * Obtenir les événements à venir
+   * Obtenir les événements à venir (fuseau horaire Paris)
    */
   const getUpcomingEvents = useCallback(
     (limit?: number) => {
-      const now = new Date().toISOString();
+      const now = getNowInParis();
       const upcoming = events
-        .filter((event) => event.start_date > now && event.status !== 'cancelled')
-        .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+        .filter((event) => {
+          // Vérifier que l'événement est dans le futur et non annulé
+          const eventDate = new Date(event.start_date);
+          return eventDate.getTime() > now.getTime() && event.status !== 'cancelled';
+        })
+        .sort((a, b) => {
+          // Trier par proximité avec la date actuelle (les plus proches en premier)
+          const dateA = new Date(a.start_date).getTime();
+          const dateB = new Date(b.start_date).getTime();
+          const nowTime = now.getTime();
+          const diffA = Math.abs(dateA - nowTime);
+          const diffB = Math.abs(dateB - nowTime);
+          return diffA - diffB;
+        });
 
       return limit ? upcoming.slice(0, limit) : upcoming;
     },

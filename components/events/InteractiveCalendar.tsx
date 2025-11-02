@@ -10,6 +10,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from 'lucide-react';
 import type { CalendarEvent } from '@/services/eventsRealtimeService';
+import { getNowInParis, formatDateParis, formatTimeParis, toParisTime } from '@/lib/dateUtils';
 
 interface InteractiveCalendarProps {
   events: CalendarEvent[];
@@ -44,7 +45,7 @@ export function InteractiveCalendar({
   selectedDate,
   className = '',
 }: InteractiveCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getNowInParis());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
 
@@ -106,10 +107,10 @@ export function InteractiveCalendar({
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(getNowInParis());
   };
 
-  const monthName = currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const monthName = formatDateParis(currentDate, { month: 'long', year: 'numeric' });
 
   return (
     <div className={`bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700 p-4 md:p-6 ${className}`}>
@@ -173,7 +174,7 @@ export function InteractiveCalendar({
         <AnimatePresence mode="popLayout">
           {daysInMonth.map((day, index) => {
             const dayEvents = getEventsForDate(day.date);
-            const isToday = day.date.toDateString() === new Date().toDateString();
+            const isToday = day.date.toDateString() === getNowInParis().toDateString();
             const isSelected = selectedDate?.toDateString() === day.date.toDateString();
             const hasEvents = dayEvents.length > 0;
 
@@ -211,10 +212,7 @@ export function InteractiveCalendar({
                 {hasEvents && (
                   <div className="space-y-0.5 overflow-hidden">
                     {dayEvents.slice(0, 3).map((event) => {
-                      const startTime = new Date(event.start_date).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
+                      const startTime = formatTimeParis(event.start_date);
 
                       return (
                         <motion.div
