@@ -116,7 +116,7 @@ export default function EventsPage() {
     if (editingEvent) {
       await updateEvent(editingEvent.id, eventData);
     } else {
-      await createEvent(eventData);
+      await createEvent(eventData as Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at' | 'agency_id' | 'created_by'>);
     }
   };
 

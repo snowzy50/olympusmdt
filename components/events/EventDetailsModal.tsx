@@ -105,28 +105,30 @@ export function EventDetailsModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
-          />
+  if (!isOpen || !event) return null;
 
-          {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden pointer-events-auto"
-            >
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        key="details-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <motion.div
+          key="details-modal"
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ type: 'spring', duration: 0.5 }}
+          className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden pointer-events-auto"
+        >
               {/* Header avec gradient de catégorie */}
               <div className={`bg-gradient-to-r ${categoryInfo.color} p-6 relative`}>
                 <button
@@ -367,10 +369,8 @@ export function EventDetailsModal({
                   </motion.button>
                 )}
               </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+        </motion.div>
+      </div>
+    </>
   );
 }

@@ -1,2 +1,2 @@
 - INTERDICTION DE METTRE CLAUDE OU GENERER PAR CLAUDE DANS LE REPO. CREER PAR SNOWZY
-- Toutes les documentations gnerer pour guides etc .md doit etre cree dans un dossier /claude/Documentation/* Creer un dossier Par Branche (Documentation technique detaille de la branche,Guides utilisation) etc
+- Ne genere pas tout le temps de documentation . tu dois tout connaitre et la creation de docs est manuel via une commande

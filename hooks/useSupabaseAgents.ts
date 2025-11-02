@@ -85,7 +85,7 @@ export function useSupabaseAgents(agencyId: string): UseSupabaseAgentsReturn {
         },
         (payload: RealtimePostgresChangesPayload<Agent>) => {
           console.log('Agent inserted:', payload.new);
-          setAgents((current) => [payload.new, ...current]);
+          setAgents((current) => [payload.new as Agent, ...current]);
         }
       )
       .on<Agent>(
@@ -98,9 +98,10 @@ export function useSupabaseAgents(agencyId: string): UseSupabaseAgentsReturn {
         },
         (payload: RealtimePostgresChangesPayload<Agent>) => {
           console.log('Agent updated:', payload.new);
+          const updatedAgent = payload.new as Agent;
           setAgents((current) =>
             current.map((agent) =>
-              agent.id === payload.new.id ? payload.new : agent
+              agent.id === updatedAgent.id ? updatedAgent : agent
             )
           );
         }
@@ -115,8 +116,9 @@ export function useSupabaseAgents(agencyId: string): UseSupabaseAgentsReturn {
         },
         (payload: RealtimePostgresChangesPayload<Agent>) => {
           console.log('Agent deleted:', payload.old);
+          const deletedAgent = payload.old as Agent;
           setAgents((current) =>
-            current.filter((agent) => agent.id !== payload.old.id)
+            current.filter((agent) => agent.id !== deletedAgent.id)
           );
         }
       )

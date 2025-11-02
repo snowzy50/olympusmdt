@@ -194,7 +194,7 @@ export function AgentsPageContent({ agencyId, agencyName }: AgentsPageContentPro
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Gestion des Agents</h1>
-            <p className="text-gray-400">Personnel de l'agence {agencyName}</p>
+            <p className="text-gray-400">Personnel de l&apos;agence {agencyName}</p>
           </div>
         </div>
         <button
@@ -747,7 +747,7 @@ function AddAgentModal({
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                <span>Créer l'agent</span>
+                <span>Créer l&apos;agent</span>
               </>
             )}
           </button>

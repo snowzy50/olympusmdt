@@ -22,7 +22,7 @@ export const authOptions: AuthOptions = {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.username || !credentials?.password) {
           return null;
         }
@@ -34,7 +34,10 @@ export const authOptions: AuthOptions = {
             name: 'Admin',
             email: 'admin@olympusrp.fr',
             isAdmin: true,
-          };
+            discordId: 'admin-bypass',
+            discordRoles: [],
+            agencies: ['sasp', 'samc', 'safd', 'dynasty8', 'doj'],
+          } as any;
         }
 
         return null;
