@@ -59,6 +59,13 @@ export async function middleware(request: NextRequest) {
     const userAgencies = token?.agencies as string[] || [];
     const isAdmin = token?.isAdmin as boolean;
 
+    // Protection des pages admin-only (Logs et Cache Demo)
+    const isAdminOnlyPage = pathname.includes('/logs') || pathname.includes('/cache-demo');
+    if (isAdminOnlyPage && !isAdmin) {
+      console.log('[MIDDLEWARE] Access denied - Admin only page');
+      return NextResponse.redirect(new URL('/agency-selection', request.url));
+    }
+
     // Bypass pour l'admin
     if (isAdmin) {
       return NextResponse.next();
