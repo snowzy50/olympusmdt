@@ -77,19 +77,33 @@ export default function OrganizationsPage() {
   return (
     <div className="h-screen flex flex-col bg-gray-950">
       {/* Header minimal */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900/50">
+      <div className="flex-shrink-0 px-4 py-2 border-b border-gray-700 bg-gray-900/50">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Target className="w-6 h-6 text-red-500" />
+            <h1 className="text-xl font-bold text-white">
               Carte des Territoires
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Cliquez sur la carte pour créer un territoire
+            <p className="text-xs text-gray-400">
+              Clic droit sur la carte pour créer un territoire
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
+          <div className="flex items-center gap-4">
+            {/* Stats compacts */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-blue-400 font-medium">Organisations</span>
+                <span className="text-sm font-bold text-white">{organizations.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-purple-400 font-medium">Territoires</span>
+                <span className="text-sm font-bold text-white">{territories.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-orange-400 font-medium">POI</span>
+                <span className="text-sm font-bold text-white">{pois.length}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
               <div
                 className={`w-2 h-2 rounded-full ${
                   isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
@@ -99,31 +113,6 @@ export default function OrganizationsPage() {
                 {isConnected ? 'Connecté' : 'Déconnecté'}
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Stats rapides */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <div className="bg-gradient-to-br from-blue-500/20 to-blue-700/20 border border-blue-500/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-blue-400 font-medium">Organisations</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{organizations.length}</div>
-          </div>
-          <div className="bg-gradient-to-br from-purple-500/20 to-purple-700/20 border border-purple-500/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-purple-400 font-medium">Territoires</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{territories.length}</div>
-          </div>
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-700/20 border border-orange-500/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-orange-400" />
-              <span className="text-xs text-orange-400 font-medium">Points d'intérêt</span>
-            </div>
-            <div className="text-2xl font-bold text-white">{pois.length}</div>
           </div>
         </div>
       </div>

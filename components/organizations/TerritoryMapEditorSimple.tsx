@@ -41,12 +41,13 @@ const mapTypes = {
 
 type MapType = keyof typeof mapTypes;
 
-// Composant pour gérer les clics sur la carte
+// Composant pour gérer les clics droits sur la carte
 function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
-    click(e) {
+    contextmenu(e) {
+      e.originalEvent.preventDefault(); // Empêcher le menu contextuel du navigateur
       if (onMapClick) {
-        console.log('[Map] Clic détecté:', e.latlng);
+        console.log('[Map] Clic droit détecté:', e.latlng);
         onMapClick(e.latlng.lat, e.latlng.lng);
       }
     },
@@ -157,7 +158,7 @@ export function TerritoryMapEditor({
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
             <span className="text-white font-semibold text-sm">Carte Interactive GTA V</span>
           </div>
-          <div className="text-[10px] text-gray-400 mb-2">Cliquez sur la carte pour créer un territoire</div>
+          <div className="text-[10px] text-gray-400 mb-2">Clic droit sur la carte pour créer un territoire</div>
 
           {/* Sélecteur de type de carte */}
           <div className="flex gap-1.5">

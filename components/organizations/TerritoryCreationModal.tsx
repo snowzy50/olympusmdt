@@ -121,9 +121,8 @@ export function TerritoryCreationModal({
         opacity: 0.5,
       });
 
-      // Reset et fermer
+      // Reset et fermer (le territoire apparaîtra via Realtime)
       handleClose();
-      alert('Territoire créé avec succès !');
     } catch (error: any) {
       console.error('Erreur création territoire:', error);
       alert(error.message || 'Erreur lors de la création du territoire');
@@ -217,7 +216,7 @@ export function TerritoryCreationModal({
 
             {/* Instruction */}
             <div className="text-xs text-gray-400 text-center">
-              Cliquez sur la carte pour ajouter des points (minimum 3 requis) • Cmd+Z / Ctrl+Z pour annuler dernier point
+              Clic droit sur la carte pour ajouter des points (minimum 3 requis) • Cmd+Z / Ctrl+Z pour annuler dernier point
             </div>
           </div>
         </motion.div>
