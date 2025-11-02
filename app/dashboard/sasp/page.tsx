@@ -1,10 +1,18 @@
+/**
+ * Page d'accueil SASP Dashboard
+ * Créé par: Snowzy
+ * Features: Vue d'ensemble avec statistiques en temps réel
+ */
+
 'use client';
 
-export default function TestPage() {
+import { DashboardOverview } from '@/components/dashboard/DashboardOverview';
+
+export default function SASPDashboardPage() {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-white">Test SASP Page</h1>
-      <p className="text-gray-400 mt-4">Si vous voyez ceci, le routing fonctionne !</p>
-    </div>
+    <DashboardOverview
+      agencyId="sasp"
+      agencyName="San Andreas State Police"
+    />
   );
 }
