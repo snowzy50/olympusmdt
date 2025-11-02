@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { ArrowRight, LogOut, Loader2, Shield } from 'lucide-react';
@@ -27,8 +28,12 @@ export default function AgencySelectionPage() {
     // Filtrer les agences en fonction des rôles de l'utilisateur
     const allowedAgencyIds = session.user?.agencies || [];
     const filtered = AGENCIES.filter(agency =>
-      allowedAgencyIds.includes(agency.id)
-    );
+      agency && agency.id && allowedAgencyIds.includes(agency.id)
+    ).filter(Boolean); // Retire les undefined/null
+
+    console.log('[Agency Selection] Session:', session.user);
+    console.log('[Agency Selection] Allowed agencies:', allowedAgencyIds);
+    console.log('[Agency Selection] Filtered agencies:', filtered);
 
     setUserAgencies(filtered);
     setIsLoading(false);
@@ -89,7 +94,8 @@ export default function AgencySelectionPage() {
 
         {/* Agency Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {userAgencies.map((agency) => {
+          {userAgencies.filter(Boolean).map((agency) => {
+            if (!agency || !agency.id) return null;
             const Icon = agency.icon;
             const isHovered = hoveredAgency === agency.id;
 
