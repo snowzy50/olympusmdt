@@ -8,8 +8,17 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { MapContainer, ImageOverlay, Polygon, Marker, Popup, useMapEvents, Polyline } from 'react-leaflet';
-import L, { LatLngBounds, DivIcon } from 'leaflet';
+import L, { LatLngBounds, DivIcon, Icon } from 'leaflet';
 import { motion } from 'framer-motion';
+
+// Fix Leaflet default icon issue
+import 'leaflet/dist/leaflet.css';
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 import {
   Play,
   Square,
@@ -23,7 +32,6 @@ import {
 } from 'lucide-react';
 import type { Territory, TerritoryPOI, Organization, Coordinates } from '@/types/organizations';
 import { poiTypeIcons } from '@/types/organizations';
-import 'leaflet/dist/leaflet.css';
 
 interface TerritoryMapEditorProps {
   territories: Territory[];
