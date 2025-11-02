@@ -20,6 +20,8 @@ interface TerritoryCreationModalProps {
   onCreateTerritory: (territory: Omit<Territory, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onCreateOrganization: (org: Omit<Organization, 'id' | 'created_at' | 'updated_at'>) => Promise<Organization>;
   onAddMember: (member: Omit<OrganizationMember, 'id' | 'joined_at'>) => Promise<void>;
+  onAddPoint?: (coords: Coordinates) => void;
+  currentPoints?: Coordinates[];
 }
 
 type Step = 'select-org' | 'create-org' | 'draw-territory';
@@ -32,6 +34,8 @@ export function TerritoryCreationModal({
   onCreateTerritory,
   onCreateOrganization,
   onAddMember,
+  onAddPoint,
+  currentPoints = [],
 }: TerritoryCreationModalProps) {
   const [step, setStep] = useState<Step>('select-org');
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
@@ -49,14 +53,10 @@ export function TerritoryCreationModal({
 
   // Form pour territoire
   const [territoryName, setTerritoryName] = useState('');
-  const [territoryPoints, setTerritoryPoints] = useState<Coordinates[]>([]);
 
   const handleSelectOrganization = (org: Organization) => {
     setSelectedOrg(org);
     setStep('draw-territory');
-    if (clickedCoordinates) {
-      setTerritoryPoints([clickedCoordinates]);
-    }
   };
 
   const handleCreateNewOrg = () => {
@@ -91,9 +91,6 @@ export function TerritoryCreationModal({
 
       setSelectedOrg(newOrg);
       setStep('draw-territory');
-      if (clickedCoordinates) {
-        setTerritoryPoints([clickedCoordinates]);
-      }
     } catch (error) {
       console.error('Erreur création organisation:', error);
       alert('Erreur lors de la création de l\'organisation');
@@ -102,17 +99,9 @@ export function TerritoryCreationModal({
     }
   };
 
-  const handleAddPoint = (coords: Coordinates) => {
-    setTerritoryPoints((prev) => [...prev, coords]);
-  };
-
-  const handleRemoveLastPoint = () => {
-    setTerritoryPoints((prev) => prev.slice(0, -1));
-  };
-
   const handleSaveTerritory = async () => {
     if (!selectedOrg) return;
-    if (territoryPoints.length < 3) {
+    if (currentPoints.length < 3) {
       alert('Un territoire doit avoir au moins 3 points');
       return;
     }
@@ -125,7 +114,7 @@ export function TerritoryCreationModal({
       await onCreateTerritory({
         organization_id: selectedOrg.id,
         name: territoryName,
-        coordinates: territoryPoints,
+        coordinates: currentPoints,
         color: selectedOrg.color,
         opacity: 0.5,
       });
@@ -151,12 +140,81 @@ export function TerritoryCreationModal({
       boss_name: '',
     });
     setTerritoryName('');
-    setTerritoryPoints([]);
     onClose();
   };
 
   if (!isOpen) return null;
 
+  // Si on est en mode dessin, afficher seulement la barre de contrôle en bas
+  if (step === 'draw-territory' && selectedOrg) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-[9999] bg-gradient-to-t from-gray-900 via-gray-900 to-gray-900/95 border-t border-gray-700 shadow-2xl p-6"
+        >
+          <div className="max-w-4xl mx-auto">
+            {/* Header avec organisation */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full border-2 border-white"
+                  style={{ backgroundColor: selectedOrg.color }}
+                />
+                <div>
+                  <h3 className="text-white font-bold">{selectedOrg.name}</h3>
+                  <p className="text-sm text-gray-300">{organizationTypeLabels[selectedOrg.type]}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                <MapPin className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-medium text-white">{currentPoints.length} point(s)</span>
+              </div>
+            </div>
+
+            {/* Formulaire */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nom du territoire *</label>
+                <input
+                  type="text"
+                  value={territoryName}
+                  onChange={(e) => setTerritoryName(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex: Downtown, Grove Street, ..."
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={handleClose}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTerritory}
+                  disabled={currentPoints.length < 3 || !territoryName.trim()}
+                  className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Sauvegarder
+                </button>
+              </div>
+            </div>
+
+            {/* Instruction */}
+            <div className="text-xs text-gray-400 text-center">
+              Cliquez sur la carte pour ajouter des points (minimum 3 requis)
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // Sinon, afficher le modal centré pour les autres étapes
   return (
     <AnimatePresence>
       <motion.div
@@ -178,7 +236,6 @@ export function TerritoryCreationModal({
             <h2 className="text-2xl font-bold text-white">
               {step === 'select-org' && 'Sélectionner une organisation'}
               {step === 'create-org' && 'Créer une organisation'}
-              {step === 'draw-territory' && `Dessiner territoire - ${selectedOrg?.name}`}
             </h2>
             <button
               onClick={handleClose}
@@ -323,78 +380,6 @@ export function TerritoryCreationModal({
             </div>
           )}
 
-          {/* Étape 3 : Dessin territoire */}
-          {step === 'draw-territory' && selectedOrg && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-10 h-10 rounded-full border-2 border-white"
-                    style={{ backgroundColor: selectedOrg.color }}
-                  />
-                  <div>
-                    <h3 className="text-white font-bold">{selectedOrg.name}</h3>
-                    <p className="text-sm text-gray-300">{organizationTypeLabels[selectedOrg.type]}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nom du territoire *</label>
-                <input
-                  type="text"
-                  value={territoryName}
-                  onChange={(e) => setTerritoryName(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: Downtown, Grove Street, ..."
-                />
-              </div>
-
-              <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm font-medium text-white">Points du territoire</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{territoryPoints.length} point(s)</span>
-                </div>
-
-                <div className="text-xs text-gray-400 mb-2">
-                  Cliquez sur la carte pour ajouter des points (minimum 3)
-                </div>
-
-                {territoryPoints.length > 0 && (
-                  <button
-                    onClick={handleRemoveLastPoint}
-                    className="w-full px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-300 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Supprimer dernier point
-                  </button>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setStep('select-org');
-                    setTerritoryPoints([]);
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleSaveTerritory}
-                  disabled={territoryPoints.length < 3 || !territoryName.trim()}
-                  className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Sauvegarder territoire
-                </button>
-              </div>
-            </div>
-          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

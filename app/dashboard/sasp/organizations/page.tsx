@@ -27,16 +27,30 @@ export default function OrganizationsPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [clickedCoordinates, setClickedCoordinates] = useState<Coordinates | null>(null);
+  const [drawingPoints, setDrawingPoints] = useState<Coordinates[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   // Au clic sur la carte
   const handleMapClick = (lat: number, lng: number) => {
-    setClickedCoordinates({ lat, lng });
-    setShowModal(true);
+    const coords = { lat, lng };
+
+    // Si on est en mode dessin, ajouter le point à la liste
+    if (isDrawing) {
+      setDrawingPoints((prev) => [...prev, coords]);
+    } else {
+      // Sinon, c'est le premier clic qui ouvre le modal
+      setClickedCoordinates(coords);
+      setDrawingPoints([coords]);
+      setShowModal(true);
+      setIsDrawing(true);
+    }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setClickedCoordinates(null);
+    setDrawingPoints([]);
+    setIsDrawing(false);
   };
 
   return (
@@ -108,6 +122,7 @@ export default function OrganizationsPage() {
             pois={pois}
             organizations={organizations}
             onMapClick={handleMapClick}
+            drawingPoints={isDrawing ? drawingPoints : undefined}
             className="h-full"
           />
         )}
@@ -122,6 +137,7 @@ export default function OrganizationsPage() {
         onCreateTerritory={createTerritory}
         onCreateOrganization={createOrganization}
         onAddMember={addMember}
+        currentPoints={drawingPoints}
       />
     </div>
   );

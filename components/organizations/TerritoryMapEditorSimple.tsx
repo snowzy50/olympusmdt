@@ -28,6 +28,7 @@ interface TerritoryMapEditorProps {
   onMapClick?: (lat: number, lng: number) => void;
   onTerritoryClick?: (territory: Territory) => void;
   onPOIClick?: (poi: TerritoryPOI) => void;
+  drawingPoints?: Coordinates[];
   className?: string;
 }
 
@@ -60,6 +61,7 @@ export function TerritoryMapEditor({
   onMapClick,
   onTerritoryClick,
   onPOIClick,
+  drawingPoints,
   className = '',
 }: TerritoryMapEditorProps) {
   const [currentMapType, setCurrentMapType] = useState<MapType>('satellite');
@@ -277,11 +279,50 @@ export function TerritoryMapEditor({
             </Popup>
           </Marker>
         ))}
+
+        {/* Preview du territoire en cours de dessin */}
+        {drawingPoints && drawingPoints.length >= 3 && (
+          <Polygon
+            positions={drawingPoints.map((coord) => gtaToPixel(coord))}
+            pathOptions={{
+              color: '#0EA5E9',
+              fillColor: '#0EA5E9',
+              fillOpacity: 0.3,
+              weight: 3,
+              dashArray: '10, 5',
+            }}
+          />
+        )}
+
+        {/* Markers pour les points de dessin */}
+        {drawingPoints && drawingPoints.map((point, index) => (
+          <Marker
+            key={`drawing-point-${index}`}
+            position={gtaToPixel(point)}
+            icon={L.divIcon({
+              className: 'custom-drawing-marker',
+              html: `<div style="
+                width: 12px;
+                height: 12px;
+                background: #0EA5E9;
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+              "></div>`,
+              iconSize: [12, 12],
+              iconAnchor: [6, 6],
+            })}
+          />
+        ))}
       </MapContainer>
 
       {/* Styles */}
       <style jsx global>{`
         .custom-poi-marker {
+          background: transparent !important;
+          border: none !important;
+        }
+        .custom-drawing-marker {
           background: transparent !important;
           border: none !important;
         }
