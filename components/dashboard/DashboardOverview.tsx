@@ -55,10 +55,10 @@ export function DashboardOverview({ agencyId, agencyName }: DashboardOverviewPro
     tomorrow.setDate(tomorrow.getDate() + 1);
     return events
       .filter((e) => {
-        const eventDate = new Date(e.date);
+        const eventDate = new Date(e.start_date);
         return eventDate >= new Date() && eventDate <= tomorrow && e.status !== 'cancelled';
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
       .slice(0, 5);
   }, [events]);
 

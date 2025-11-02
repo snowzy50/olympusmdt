@@ -203,9 +203,13 @@ export default function OrganizationsPage() {
         onClose={handleCloseModal}
         organizations={organizations}
         clickedCoordinates={clickedCoordinates}
-        onCreateTerritory={createTerritory}
+        onCreateTerritory={async (data) => {
+          await createTerritory(data);
+        }}
         onCreateOrganization={createOrganization}
-        onAddMember={addMember}
+        onAddMember={async (data) => {
+          await addMember(data);
+        }}
         currentPoints={drawingPoints}
         onUndoLastPoint={handleUndoLastPoint}
       />

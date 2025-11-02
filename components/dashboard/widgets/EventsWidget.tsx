@@ -10,17 +10,17 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Users, ChevronRight, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { Event } from '@/services/eventsRealtimeService';
+import type { CalendarEvent } from '@/services/eventsRealtimeService';
 import { formatDateParis, formatTimeParis } from '@/lib/dateUtils';
 
 interface EventsWidgetProps {
-  events: Event[];
+  events: CalendarEvent[];
   total: number;
   agencyId: string;
   isConnected: boolean;
 }
 
-const eventTypeLabels: Record<Event['event_type'], string> = {
+const eventTypeLabels: Record<CalendarEvent['category'], string> = {
   operation: 'Opération',
   training: 'Formation',
   patrol: 'Patrouille',
@@ -29,7 +29,7 @@ const eventTypeLabels: Record<Event['event_type'], string> = {
   other: 'Autre',
 };
 
-const eventTypeIcons: Record<Event['event_type'], string> = {
+const eventTypeIcons: Record<CalendarEvent['category'], string> = {
   operation: '🎯',
   training: '📚',
   patrol: '🚔',
@@ -128,10 +128,10 @@ export function EventsWidget({ events, total, agencyId, isConnected }: EventsWid
                   {/* Header */}
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-2xl flex-shrink-0">{eventTypeIcons[event.event_type]}</span>
+                      <span className="text-2xl flex-shrink-0">{eventTypeIcons[event.category]}</span>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white truncate">{event.title}</h4>
-                        <p className="text-xs text-gray-400">{eventTypeLabels[event.event_type]}</p>
+                        <p className="text-xs text-gray-400">{eventTypeLabels[event.category]}</p>
                       </div>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusConfig[event.status].color} flex-shrink-0`}>

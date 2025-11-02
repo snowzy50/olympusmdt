@@ -18,12 +18,12 @@ import {
   Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { Event } from '@/services/eventsRealtimeService';
+import type { CalendarEvent } from '@/services/eventsRealtimeService';
 import type { DispatchCall } from '@/services/dispatchRealtimeService';
 import { formatTimeParis } from '@/lib/dateUtils';
 
 interface ActivityFeedProps {
-  events: Event[];
+  events: CalendarEvent[];
   calls: DispatchCall[];
   agencyId: string;
 }
@@ -40,7 +40,7 @@ type ActivityItem = {
   location?: string;
 };
 
-const eventTypeIcons: Record<Event['event_type'], string> = {
+const eventTypeIcons: Record<CalendarEvent['category'], string> = {
   operation: '🎯',
   training: '📚',
   patrol: '🚔',
@@ -69,7 +69,7 @@ export function ActivityFeed({ events, calls, agencyId }: ActivityFeedProps) {
     const eventActivities: ActivityItem[] = events.map((event) => ({
       id: event.id,
       type: 'event' as const,
-      icon: eventTypeIcons[event.event_type],
+      icon: eventTypeIcons[event.category],
       title: event.title,
       subtitle: 'Événement planifié',
       time: formatTimeParis(event.date),
