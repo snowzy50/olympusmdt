@@ -167,21 +167,48 @@ export function useEvents(options: UseEventsOptions = {}) {
   const getUpcomingEvents = useCallback(
     (limit?: number) => {
       const now = getNowInParis();
+
+      console.log('[useEvents] 🔍 Calcul des événements à venir');
+      console.log('[useEvents] 📅 Date actuelle Paris:', now.toISOString());
+      console.log('[useEvents] 📊 Nombre total d\'événements:', events.length);
+
+      // Afficher tous les événements pour débogage
+      events.forEach((event, idx) => {
+        const eventStart = new Date(event.start_date);
+        const eventEnd = new Date(event.end_date);
+        const isAfterNow = eventEnd.getTime() > now.getTime();
+        console.log(`[useEvents] Event ${idx + 1}:`, {
+          title: event.title,
+          start: event.start_date,
+          end: event.end_date,
+          status: event.status,
+          isAfterNow,
+          startTime: eventStart.getTime(),
+          endTime: eventEnd.getTime(),
+          nowTime: now.getTime(),
+        });
+      });
+
       const upcoming = events
         .filter((event) => {
-          // Vérifier que l'événement est dans le futur et non annulé
-          const eventDate = new Date(event.start_date);
-          return eventDate.getTime() > now.getTime() && event.status !== 'cancelled';
+          // Vérifier que l'événement n'est pas terminé (utiliser end_date au lieu de start_date)
+          const eventEnd = new Date(event.end_date);
+          const isUpcoming = eventEnd.getTime() > now.getTime() && event.status !== 'cancelled';
+
+          if (isUpcoming) {
+            console.log('[useEvents] ✅ Événement à venir trouvé:', event.title);
+          }
+
+          return isUpcoming;
         })
         .sort((a, b) => {
-          // Trier par proximité avec la date actuelle (les plus proches en premier)
+          // Trier par date de début (les plus proches en premier)
           const dateA = new Date(a.start_date).getTime();
           const dateB = new Date(b.start_date).getTime();
-          const nowTime = now.getTime();
-          const diffA = Math.abs(dateA - nowTime);
-          const diffB = Math.abs(dateB - nowTime);
-          return diffA - diffB;
+          return dateA - dateB;
         });
+
+      console.log('[useEvents] 📋 Événements à venir:', upcoming.length);
 
       return limit ? upcoming.slice(0, limit) : upcoming;
     },
