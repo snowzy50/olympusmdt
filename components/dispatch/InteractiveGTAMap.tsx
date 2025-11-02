@@ -8,7 +8,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
-import { Icon, LatLng } from 'leaflet';
+import L, { Icon, LatLng, CRS } from 'leaflet';
 import type { DispatchCall } from '@/services/dispatchRealtimeService';
 import 'leaflet/dist/leaflet.css';
 
@@ -59,8 +59,9 @@ export function InteractiveGTAMap({
   const mapRef = useRef<any>(null);
 
   // Centre de la carte GTA V (Los Santos)
-  const centerPosition: [number, number] = [0, 0];
-  const defaultZoom = 4;
+  // Coordonnées pour CRS.Simple: centre de la carte en pixels
+  const centerPosition: [number, number] = [128, 128];
+  const defaultZoom = 2;
 
   return (
     <div className={`relative w-full h-full bg-gray-900 rounded-xl overflow-hidden ${className}`}>
@@ -98,23 +99,26 @@ export function InteractiveGTAMap({
       <MapContainer
         center={centerPosition}
         zoom={defaultZoom}
-        minZoom={3}
-        maxZoom={6}
+        minZoom={1}
+        maxZoom={5}
+        maxBounds={[[0, 0], [256, 256]]}
         zoomControl={false}
         className="w-full h-full"
         ref={mapRef}
+        crs={L.CRS.Simple}
         style={{
-          background: '#1a1a2e',
-          filter: 'brightness(0.9) contrast(1.1)',
+          background: '#0a0e1a',
         }}
       >
         {/* Tuiles de la carte GTA V */}
         <TileLayer
-          url="https://raw.githubusercontent.com/fivem-map/fivem-map/master/tiles/{z}/{x}/{y}.png"
-          attribution='&copy; GTA V Map'
+          url="https://s.rsg.sc/sc/images/games/GTAV/map/game/{z}/{x}/{y}.png"
+          attribution='&copy; Rockstar Games - GTA V'
           tileSize={256}
           maxNativeZoom={5}
-          minNativeZoom={2}
+          minNativeZoom={0}
+          noWrap={true}
+          bounds={[[0, 0], [256, 256]]}
         />
 
         {/* Contrôle de zoom */}
