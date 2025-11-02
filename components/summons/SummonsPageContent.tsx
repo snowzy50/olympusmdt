@@ -113,14 +113,9 @@ export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentP
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center">
-            <FileCheck className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Convocations</h1>
-            <p className="text-gray-400">Gestion des convocations judiciaires - {agencyName}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Convocations</h1>
+          <p className="text-gray-400">Gestion des convocations judiciaires - {agencyName}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}

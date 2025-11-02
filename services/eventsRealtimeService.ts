@@ -192,6 +192,12 @@ class EventsRealtimeService {
     this.subscribers.set(id, callbacks);
     console.log(`[EventsRealtime] 📡 Nouvel abonné: ${id}`);
 
+    // Si déjà connecté, notifier immédiatement le nouvel abonné
+    if (this.isConnected && callbacks.onConnected) {
+      console.log(`[EventsRealtime] ✅ Notification connexion existante pour: ${id}`);
+      callbacks.onConnected();
+    }
+
     // Retourner la fonction de désabonnement
     return () => this.unsubscribe(id);
   }

@@ -30,18 +30,13 @@ export function SettingsPageContent({ agencyId, agencyName }: SettingsPageConten
   return (
     <div className="p-8">
       {/* En-tête */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center">
-          <Settings className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            Paramètres
-          </h1>
-          <p className="text-gray-400">
-            Configuration de l'agence {agencyName}
-          </p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-white">
+          Paramètres
+        </h1>
+        <p className="text-gray-400">
+          Configuration de l'agence {agencyName}
+        </p>
       </div>
 
       {/* Tabs */}

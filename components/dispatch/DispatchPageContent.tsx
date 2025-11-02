@@ -134,14 +134,9 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-orange-800 rounded-xl flex items-center justify-center">
-            <Radio className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Dispatch</h1>
-            <p className="text-gray-400">Centre de répartition des appels - {agencyName}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Dispatch</h1>
+          <p className="text-gray-400">Centre de répartition des appels - {agencyName}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}

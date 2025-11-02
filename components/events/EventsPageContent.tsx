@@ -157,10 +157,7 @@ export function EventsPageContent({ agencyId, agencyName }: EventsPageContentPro
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
         >
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent flex items-center gap-4">
-              <div className={`p-3 bg-gradient-to-br ${colors.from} ${colors.to} rounded-2xl shadow-lg ${colors.shadow}`}>
-                <CalendarIcon className="w-8 h-8 md:w-10 md:h-10 text-white" />
-              </div>
+            <h1 className="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
               Événements {agencyName}
             </h1>
             <p className="text-gray-400 text-lg ml-1">

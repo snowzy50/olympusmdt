@@ -58,19 +58,20 @@ const priorityConfig = {
   urgent: { label: 'Urgent', color: 'border-l-red-600', badge: 'bg-red-500/20 text-red-300' },
 };
 
-export function EventCard({
-  event,
-  onView,
-  onEdit,
-  onDelete,
-  compact = false,
-  showActions = true,
-  className = '',
-}: EventCardProps) {
-  const categoryInfo = categoryConfig[event.category];
-  const statusInfo = statusConfig[event.status];
-  const priorityInfo = priorityConfig[event.priority];
-  const StatusIcon = statusInfo.icon;
+export const EventCard = React.forwardRef<HTMLDivElement, EventCardProps>(
+  function EventCard({
+    event,
+    onView,
+    onEdit,
+    onDelete,
+    compact = false,
+    showActions = true,
+    className = '',
+  }, ref) {
+    const categoryInfo = categoryConfig[event.category];
+    const statusInfo = statusConfig[event.status];
+    const priorityInfo = priorityConfig[event.priority];
+    const StatusIcon = statusInfo.icon;
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('fr-FR', {
@@ -92,6 +93,7 @@ export function EventCard({
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -254,4 +256,6 @@ export function EventCard({
       />
     </motion.div>
   );
-}
+});
+
+EventCard.displayName = 'EventCard';

@@ -188,14 +188,9 @@ export function AgentsPageContent({ agencyId, agencyName }: AgentsPageContentPro
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
-            <Users className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Gestion des Agents</h1>
-            <p className="text-gray-400">Personnel de l&apos;agence {agencyName}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Gestion des Agents</h1>
+          <p className="text-gray-400">Personnel de l&apos;agence {agencyName}</p>
         </div>
         <button
           onClick={() => {
