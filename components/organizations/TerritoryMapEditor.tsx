@@ -337,7 +337,7 @@ export function TerritoryMapEditor({
             onClick={() => setShowTerritories(!showTerritories)}
             className="w-full px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors flex items-center gap-2"
           >
-            {showTerritoires ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            {showTerritories ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
             Territoires
           </button>
           <button
