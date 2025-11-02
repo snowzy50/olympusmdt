@@ -129,11 +129,10 @@ class EventsRealtimeService {
         },
         (payload) => {
           const event = payload.old as CalendarEvent;
-          // Filtrer côté client par agency_id
-          if (event.agency_id === agencyId) {
-            console.log('[EventsRealtime] Événement supprimé:', event);
-            this.notifySubscribers('onDelete', event.id);
-          }
+          // Pour DELETE, payload.old ne contient que l'ID (limitation Postgres Realtime)
+          // On notifie tous les DELETE et le hook côté client filtrera
+          console.log('[EventsRealtime] Événement supprimé:', event.id);
+          this.notifySubscribers('onDelete', event.id);
         }
       )
       .subscribe((status, err) => {
