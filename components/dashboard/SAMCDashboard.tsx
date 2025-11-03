@@ -157,34 +157,9 @@ export function SAMCDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-agencies-samc-500 to-agencies-samc-700 rounded-2xl flex items-center justify-center shadow-2xl">
-            <Heart className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-white">San Andreas Medical Center</h1>
-            <p className="text-gray-400 text-lg">Tableau de bord - Vue d'ensemble médicale</p>
-          </div>
-        </div>
-
-        {/* Status indicators */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
-            <div className={`w-2 h-2 rounded-full ${eventsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-xs text-gray-300">Événements</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
-            <div className={`w-2 h-2 rounded-full ${dispatchConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-xs text-gray-300">Dispatch</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
-            <Zap className="w-3 h-3 text-yellow-400" />
-            <span className="text-xs text-gray-300">Temps réel actif</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg">
-            <Users className="w-3 h-3 text-agencies-samc-400" />
-            <span className="text-xs text-gray-300">{medicalStats.onDutyStaff} personnel de garde</span>
-          </div>
+        <div>
+          <h1 className="text-4xl font-bold text-white">San Andreas Medical Center</h1>
+          <p className="text-gray-400 text-lg">Tableau de bord - Vue d'ensemble médicale</p>
         </div>
       </motion.div>
 
@@ -198,6 +173,7 @@ export function SAMCDashboard() {
           trend={medicalStats.activeInterventions > 0 ? 'up' : 'neutral'}
           color="red"
           delay={0}
+          onClick={() => router.push('/dashboard/samc/interventions')}
         />
         <StatsCard
           icon={Clipboard}
@@ -207,6 +183,7 @@ export function SAMCDashboard() {
           trend={medicalStats.criticalCases > 0 ? 'up' : 'neutral'}
           color="blue"
           delay={0.1}
+          onClick={() => router.push('/dashboard/samc/medical-records')}
         />
         <StatsCard
           icon={Users}
@@ -216,6 +193,7 @@ export function SAMCDashboard() {
           trend="neutral"
           color="green"
           delay={0.2}
+          onClick={() => router.push('/dashboard/samc/medical-staff')}
         />
         <StatsCard
           icon={Pill}
@@ -225,16 +203,18 @@ export function SAMCDashboard() {
           trend={medicalStats.todayPrescriptions > 0 ? 'up' : 'neutral'}
           color="purple"
           delay={0.3}
+          onClick={() => router.push('/dashboard/samc/prescriptions')}
         />
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <motion.div
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="glass-strong p-4 rounded-lg border border-white/10"
+          onClick={() => router.push('/dashboard/samc/certificates')}
+          className="glass-strong p-4 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 text-left"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -244,13 +224,14 @@ export function SAMCDashboard() {
             </div>
             <FileText className="w-8 h-8 text-agencies-samc-500" />
           </div>
-        </motion.div>
+        </motion.button>
 
-        <motion.div
+        <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="glass-strong p-4 rounded-lg border border-white/10"
+          onClick={() => router.push('/dashboard/samc/incident-reports')}
+          className="glass-strong p-4 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 text-left"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -260,39 +241,7 @@ export function SAMCDashboard() {
             </div>
             <AlertTriangle className="w-8 h-8 text-error-500" />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="glass-strong p-4 rounded-lg border border-white/10"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Événements</p>
-              <p className="text-2xl font-bold text-white">{medicalStats.upcomingEvents}</p>
-              <p className="text-xs text-gray-500">À venir</p>
-            </div>
-            <Calendar className="w-8 h-8 text-info-500" />
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="glass-strong p-4 rounded-lg border border-white/10"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Appels dispatch</p>
-              <p className="text-2xl font-bold text-white">{medicalStats.activeCalls}</p>
-              <p className="text-xs text-gray-500">En cours</p>
-            </div>
-            <Radio className="w-8 h-8 text-warning-500" />
-          </div>
-        </motion.div>
+        </motion.button>
       </div>
 
       {/* Activity Feed */}
