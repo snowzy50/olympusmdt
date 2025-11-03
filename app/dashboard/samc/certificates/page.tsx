@@ -127,6 +127,8 @@ export default function CertificatesPage() {
         ...formData as CertificateInsert,
         certificate_number: `CERT-${typePrefix}-${new Date().getFullYear()}-${String(certificates.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString(),
+        valid_until: null,
+        shared_with: null,
       };
       await addCertificate(certData);
     }
