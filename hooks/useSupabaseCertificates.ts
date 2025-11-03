@@ -94,7 +94,15 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
       console.log('🔵 [Certificates] Adding:', data);
       const { data: result, error: insertError } = await supabase
         .from('certificates').insert(data).select().single();
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('❌ [Certificates] Insert error details:', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code,
+        });
+        throw insertError;
+      }
       if (result) {
         console.log('✅ [Certificates] Added:', result);
         setCertificates((current) => [result, ...current]);
