@@ -298,6 +298,240 @@ export type Database = {
         };
         Update: Partial<Database['public']['Tables']['fines']['Insert']>;
       };
+      // ============================================
+      // NOUVELLES TABLES MÉDICALES - SAMC
+      // ============================================
+      interventions: {
+        Row: {
+          id: string;
+          intervention_number: string;
+          type: 'emergency' | 'hospitalization' | 'visit' | 'consultation' | 'transport';
+          patient_name: string;
+          patient_id: string;
+          practitioner: string;
+          practitioner_id: string;
+          date: string;
+          location: string;
+          diagnosis: string | null;
+          treatment: string | null;
+          notes: string | null;
+          status: 'in_progress' | 'completed' | 'cancelled';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['interventions']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['interventions']['Insert']>;
+      };
+      sick_leaves: {
+        Row: {
+          id: string;
+          sick_leave_number: string;
+          patient_name: string;
+          patient_id: string;
+          doctor: string;
+          doctor_id: string;
+          start_date: string;
+          end_date: string;
+          duration_days: number;
+          medical_reason: string;
+          certificate_id: string | null;
+          status: 'active' | 'expired' | 'extended';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['sick_leaves']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['sick_leaves']['Insert']>;
+      };
+      prescriptions: {
+        Row: {
+          id: string;
+          prescription_number: string;
+          patient_name: string;
+          patient_id: string;
+          doctor: string;
+          doctor_id: string;
+          medications: Array<{ name: string; dosage: string; frequency: string }>;
+          posology: string;
+          treatment_duration: string;
+          date: string;
+          refills_allowed: number;
+          notes: string | null;
+          status: 'active' | 'completed' | 'cancelled';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['prescriptions']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['prescriptions']['Insert']>;
+      };
+      death_certificates: {
+        Row: {
+          id: string;
+          certificate_number: string;
+          deceased_name: string;
+          deceased_id: string;
+          date_of_death: string;
+          location_of_death: string;
+          doctor: string;
+          doctor_id: string;
+          cause_of_death: string;
+          circumstances: string | null;
+          autopsy_required: boolean;
+          status: 'draft' | 'validated' | 'archived';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['death_certificates']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['death_certificates']['Insert']>;
+      };
+      incident_reports: {
+        Row: {
+          id: string;
+          report_number: string;
+          type: 'medical_error' | 'accident' | 'equipment_failure' | 'other';
+          date: string;
+          location: string;
+          staff_involved: string;
+          staff_ids: string | null;
+          description: string;
+          severity: 'minor' | 'moderate' | 'severe' | 'critical';
+          corrective_actions: string | null;
+          status: 'investigating' | 'closed' | 'pending_review';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['incident_reports']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['incident_reports']['Insert']>;
+      };
+      medical_acts: {
+        Row: {
+          id: string;
+          act_number: string;
+          type: 'consultation' | 'care' | 'surgery' | 'analysis' | 'imaging' | 'other';
+          patient_name: string;
+          patient_id: string;
+          practitioner: string;
+          practitioner_id: string;
+          date: string;
+          duration_minutes: number | null;
+          description: string;
+          act_code: string | null;
+          cost: number;
+          notes: string | null;
+          status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['medical_acts']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['medical_acts']['Insert']>;
+      };
+      medical_staff: {
+        Row: {
+          id: string;
+          staff_number: string;
+          first_name: string;
+          last_name: string;
+          role: 'doctor' | 'nurse' | 'paramedic' | 'surgeon' | 'specialist' | 'intern' | 'admin';
+          specialty: string | null;
+          grade: string | null;
+          license_number: string | null;
+          phone: string | null;
+          email: string | null;
+          service_hours: number;
+          availability: 'available' | 'on_call' | 'busy' | 'off_duty';
+          status: 'active' | 'on_leave' | 'suspended' | 'inactive';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['medical_staff']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['medical_staff']['Insert']>;
+      };
+      on_duty_schedule: {
+        Row: {
+          id: string;
+          schedule_number: string;
+          staff_id: string;
+          staff_name: string;
+          staff_role: string;
+          start_time: string;
+          end_time: string;
+          shift_type: 'day' | 'night' | 'weekend' | 'on_call';
+          service: string;
+          unit: string | null;
+          status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+          replacement_staff_id: string | null;
+          replacement_staff_name: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['on_duty_schedule']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['on_duty_schedule']['Insert']>;
+      };
+      ppa_certificates: {
+        Row: {
+          id: string;
+          certificate_number: string;
+          citizen_name: string;
+          citizen_id: string;
+          doctor: string;
+          doctor_id: string;
+          examination_date: string;
+          fitness: 'fit' | 'unfit' | 'fit_with_restrictions';
+          validity_months: number;
+          expiry_date: string;
+          restrictions: string | null;
+          medical_observations: string | null;
+          sasp_validated: boolean;
+          sasp_validator: string | null;
+          sasp_validation_date: string | null;
+          status: 'pending' | 'validated' | 'rejected' | 'expired';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['ppa_certificates']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['ppa_certificates']['Insert']>;
+      };
     };
   };
 };
@@ -343,3 +577,40 @@ export type SeizureUpdate = Database['public']['Tables']['seizures']['Update'];
 export type Fine = Database['public']['Tables']['fines']['Row'];
 export type FineInsert = Database['public']['Tables']['fines']['Insert'];
 export type FineUpdate = Database['public']['Tables']['fines']['Update'];
+
+// Types pour les modules médicaux SAMC
+export type Intervention = Database['public']['Tables']['interventions']['Row'];
+export type InterventionInsert = Database['public']['Tables']['interventions']['Insert'];
+export type InterventionUpdate = Database['public']['Tables']['interventions']['Update'];
+
+export type SickLeave = Database['public']['Tables']['sick_leaves']['Row'];
+export type SickLeaveInsert = Database['public']['Tables']['sick_leaves']['Insert'];
+export type SickLeaveUpdate = Database['public']['Tables']['sick_leaves']['Update'];
+
+export type Prescription = Database['public']['Tables']['prescriptions']['Row'];
+export type PrescriptionInsert = Database['public']['Tables']['prescriptions']['Insert'];
+export type PrescriptionUpdate = Database['public']['Tables']['prescriptions']['Update'];
+
+export type DeathCertificate = Database['public']['Tables']['death_certificates']['Row'];
+export type DeathCertificateInsert = Database['public']['Tables']['death_certificates']['Insert'];
+export type DeathCertificateUpdate = Database['public']['Tables']['death_certificates']['Update'];
+
+export type IncidentReport = Database['public']['Tables']['incident_reports']['Row'];
+export type IncidentReportInsert = Database['public']['Tables']['incident_reports']['Insert'];
+export type IncidentReportUpdate = Database['public']['Tables']['incident_reports']['Update'];
+
+export type MedicalAct = Database['public']['Tables']['medical_acts']['Row'];
+export type MedicalActInsert = Database['public']['Tables']['medical_acts']['Insert'];
+export type MedicalActUpdate = Database['public']['Tables']['medical_acts']['Update'];
+
+export type MedicalStaff = Database['public']['Tables']['medical_staff']['Row'];
+export type MedicalStaffInsert = Database['public']['Tables']['medical_staff']['Insert'];
+export type MedicalStaffUpdate = Database['public']['Tables']['medical_staff']['Update'];
+
+export type OnDutySchedule = Database['public']['Tables']['on_duty_schedule']['Row'];
+export type OnDutyScheduleInsert = Database['public']['Tables']['on_duty_schedule']['Insert'];
+export type OnDutyScheduleUpdate = Database['public']['Tables']['on_duty_schedule']['Update'];
+
+export type PPACertificate = Database['public']['Tables']['ppa_certificates']['Row'];
+export type PPACertificateInsert = Database['public']['Tables']['ppa_certificates']['Insert'];
+export type PPACertificateUpdate = Database['public']['Tables']['ppa_certificates']['Update'];
