@@ -214,7 +214,7 @@ export default function InterventionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-6">
       {/* En-tête et statistiques */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-6">Interventions Médicales</h1>

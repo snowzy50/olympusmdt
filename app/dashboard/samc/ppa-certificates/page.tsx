@@ -186,7 +186,7 @@ export default function PPACertificatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-6">
       <div>
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-3xl font-bold text-white">Certificats PPA (Port d'Arme)</h1>
