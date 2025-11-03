@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -18,26 +18,13 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseFines } from '@/hooks/useSupabaseFines';
+import type { Fine, FineInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des amendes
  * Créé par Snowzy
  */
-
-interface Fine {
-  id: string;
-  fineNumber: string;
-  citizenName: string;
-  citizenId: string;
-  violation: string;
-  amount: number;
-  issuedBy: string;
-  officerId: string;
-  date: string;
-  dueDate: string;
-  status: 'unpaid' | 'paid' | 'overdue' | 'cancelled';
-  paymentDate?: string;
-}
 
 const statusLabels: Record<string, { label: string; color: string; icon: any }> = {
   unpaid: { label: 'Non payée', color: 'warning', icon: Clock },
@@ -55,63 +42,21 @@ export default function FinesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Fine>>({
-    citizenName: '',
-    citizenId: '',
+    citizen_name: '',
+    citizen_id: '',
     violation: '',
     amount: 0,
-    issuedBy: '',
-    officerId: '',
+    issued_by: '',
+    officer_id: '',
     status: 'unpaid',
   });
 
-  // Données de démonstration
-  const [fines, setFines] = useState<Fine[]>([
-    {
-      id: '1',
-      fineNumber: 'FINE-2024-001',
-      citizenName: 'John Smith',
-      citizenId: 'CIT-001',
-      violation: 'Excès de vitesse (85 km/h en zone 50)',
-      amount: 135,
-      issuedBy: 'Agent Williams',
-      officerId: 'SASP-9012',
-      date: '2024-10-28T15:30:00',
-      dueDate: '2024-11-28',
-      status: 'unpaid',
-    },
-    {
-      id: '2',
-      fineNumber: 'FINE-2024-002',
-      citizenName: 'Jane Doe',
-      citizenId: 'CIT-002',
-      violation: 'Stationnement interdit',
-      amount: 35,
-      issuedBy: 'Agent Smith',
-      officerId: 'SASP-1234',
-      date: '2024-10-25T10:20:00',
-      dueDate: '2024-11-25',
-      status: 'paid',
-      paymentDate: '2024-10-30T14:15:00',
-    },
-    {
-      id: '3',
-      fineNumber: 'FINE-2024-003',
-      citizenName: 'Robert Johnson',
-      citizenId: 'CIT-003',
-      violation: 'Franchissement ligne blanche',
-      amount: 90,
-      issuedBy: 'Sergent Johnson',
-      officerId: 'SASP-5678',
-      date: '2024-09-15T18:45:00',
-      dueDate: '2024-10-15',
-      status: 'overdue',
-    },
-  ]);
+  const { fines, isLoading, error, addFine, updateFine, deleteFine } = useSupabaseFines();
 
   const filteredFines = fines.filter((fine) => {
     const matchesSearch =
-      fine.citizenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fine.fineNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fine.citizen_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fine.fine_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       fine.violation.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || fine.status === selectedStatus;
     return matchesSearch && matchesStatus;
@@ -129,12 +74,12 @@ export default function FinesPage() {
   const handleCreate = () => {
     setEditingFine(null);
     setFormData({
-      citizenName: '',
-      citizenId: '',
+      citizen_name: '',
+      citizen_id: '',
       violation: '',
       amount: 0,
-      issuedBy: '',
-      officerId: '',
+      issued_by: '',
+      officer_id: '',
       status: 'unpaid',
     });
     setShowModal(true);
@@ -155,34 +100,29 @@ export default function FinesPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      setFines(fines.filter((f) => f.id !== deletingId));
+      await deleteFine(deletingId);
       setShowDeleteConfirm(false);
       setDeletingId(null);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date();
     const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
     if (editingFine) {
-      setFines(
-        fines.map((f) =>
-          f.id === editingFine.id ? { ...f, ...formData } as Fine : f
-        )
-      );
+      await updateFine(editingFine.id, formData);
     } else {
-      const newFine: Fine = {
-        id: Date.now().toString(),
-        fineNumber: `FINE-${new Date().getFullYear()}-${String(fines.length + 1).padStart(3, '0')}`,
+      const fineData: FineInsert = {
+        ...formData as FineInsert,
+        fine_number: `FINE-${new Date().getFullYear()}-${String(fines.length + 1).padStart(3, '0')}`,
         date: now.toISOString(),
-        dueDate: dueDate.toISOString().split('T')[0],
-        ...formData as Fine,
+        due_date: dueDate.toISOString().split('T')[0],
       };
-      setFines([...fines, newFine]);
+      await addFine(fineData);
     }
     setShowModal(false);
   };
@@ -341,18 +281,18 @@ export default function FinesPage() {
                     className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="text-white font-medium">{fine.fineNumber}</span>
+                      <span className="text-white font-medium">{fine.fine_number}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-white font-medium">{fine.citizenName}</p>
-                        <p className="text-sm text-gray-400">{fine.citizenId}</p>
+                        <p className="text-white font-medium">{fine.citizen_name}</p>
+                        <p className="text-sm text-gray-400">{fine.citizen_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-gray-300 max-w-xs">{fine.violation}</p>
                       <p className="text-sm text-gray-400 mt-1">
-                        Par {fine.issuedBy}
+                        Par {fine.issued_by}
                       </p>
                     </td>
                     <td className="px-6 py-4">
@@ -367,7 +307,7 @@ export default function FinesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-300">
-                        {new Date(fine.dueDate).toLocaleDateString('fr-FR')}
+                        {new Date(fine.due_date).toLocaleDateString('fr-FR')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -442,8 +382,8 @@ export default function FinesPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.citizenName}
-                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    value={formData.citizen_name}
+                    onChange={(e) => setFormData({ ...formData, citizen_name: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -454,8 +394,8 @@ export default function FinesPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.citizenId}
-                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    value={formData.citizen_id}
+                    onChange={(e) => setFormData({ ...formData, citizen_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -495,8 +435,8 @@ export default function FinesPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.issuedBy}
-                    onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+                    value={formData.issued_by}
+                    onChange={(e) => setFormData({ ...formData, issued_by: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -507,8 +447,8 @@ export default function FinesPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.officerId}
-                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    value={formData.officer_id}
+                    onChange={(e) => setFormData({ ...formData, officer_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -565,7 +505,7 @@ export default function FinesPage() {
             </div>
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-bold text-white">{viewingFine.citizenName}</h3>
+                <h3 className="text-2xl font-bold text-white">{viewingFine.citizen_name}</h3>
                 <Badge variant={statusLabels[viewingFine.status].color as any} className="flex items-center gap-1">
                   {React.createElement(statusLabels[viewingFine.status].icon, { className: 'w-4 h-4' })}
                   {statusLabels[viewingFine.status].label}
@@ -575,11 +515,11 @@ export default function FinesPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-gray-400">Numéro d'amende</p>
-                  <p className="text-lg font-medium text-white">{viewingFine.fineNumber}</p>
+                  <p className="text-lg font-medium text-white">{viewingFine.fine_number}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">ID Citoyen</p>
-                  <p className="text-lg font-medium text-white">{viewingFine.citizenId}</p>
+                  <p className="text-lg font-medium text-white">{viewingFine.citizen_id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Montant</p>
@@ -594,14 +534,14 @@ export default function FinesPage() {
                 <div>
                   <p className="text-sm text-gray-400">Date limite</p>
                   <p className="text-lg font-medium text-white">
-                    {new Date(viewingFine.dueDate).toLocaleDateString('fr-FR')}
+                    {new Date(viewingFine.due_date).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
-                {viewingFine.paymentDate && (
+                {viewingFine.payment_date && (
                   <div>
                     <p className="text-sm text-gray-400">Date de paiement</p>
                     <p className="text-lg font-medium text-success-500">
-                      {new Date(viewingFine.paymentDate).toLocaleDateString('fr-FR')}
+                      {new Date(viewingFine.payment_date).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                 )}
@@ -612,7 +552,7 @@ export default function FinesPage() {
                 <div>
                   <p className="text-sm text-gray-400">Agent émetteur</p>
                   <p className="text-lg font-medium text-white">
-                    {viewingFine.issuedBy} ({viewingFine.officerId})
+                    {viewingFine.issued_by} ({viewingFine.officer_id})
                   </p>
                 </div>
               </div>

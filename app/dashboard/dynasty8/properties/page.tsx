@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -14,34 +14,17 @@ import {
   Edit,
   Map,
   Filter,
+  X,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseProperties } from '@/hooks/useSupabaseProperties';
+import type { Property, PropertyInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des propriétés immobilières
  * Créé par Snowzy
  */
-
-interface Property {
-  id: string;
-  propertyNumber: string;
-  type: 'house' | 'apartment' | 'commercial';
-  address: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  status: 'available' | 'rented' | 'sold';
-  price: number;
-  rentPrice?: number;
-  surface: number;
-  rooms: number;
-  owner?: string;
-  tenant?: string;
-  agent: string;
-  agentId: string;
-  description: string;
-  features: string[];
-}
 
 const propertyTypeLabels: Record<string, { label: string; color: string }> = {
   house: { label: 'Maison', color: 'success' },
@@ -61,62 +44,34 @@ export default function PropertiesPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showMap, setShowMap] = useState(false);
 
-  // Données de démonstration
-  const [properties] = useState<Property[]>([
-    {
-      id: '1',
-      propertyNumber: 'PROP-2024-001',
-      type: 'house',
-      address: '123 Vinewood Hills, Los Santos',
-      coordinates: { lat: 34.0522, lng: -118.2437 },
-      status: 'available',
-      price: 850000,
-      surface: 250,
-      rooms: 5,
-      agent: 'Sarah Johnson',
-      agentId: 'DYN-1234',
-      description: 'Magnifique villa avec vue panoramique sur la ville',
-      features: ['Piscine', 'Garage 2 places', 'Jardin', 'Vue mer'],
-    },
-    {
-      id: '2',
-      propertyNumber: 'PROP-2024-002',
-      type: 'apartment',
-      address: '456 Downtown Apt 12B, Los Santos',
-      coordinates: { lat: 34.0489, lng: -118.2500 },
-      status: 'rented',
-      price: 320000,
-      rentPrice: 1500,
-      surface: 85,
-      rooms: 3,
-      tenant: 'Michael Brown',
-      agent: 'John Smith',
-      agentId: 'DYN-5678',
-      description: 'Appartement moderne en centre-ville',
-      features: ['Balcon', 'Parking souterrain', 'Ascenseur'],
-    },
-    {
-      id: '3',
-      propertyNumber: 'PROP-2024-003',
-      type: 'commercial',
-      address: '789 Business District, Los Santos',
-      coordinates: { lat: 34.0450, lng: -118.2550 },
-      status: 'sold',
-      price: 1200000,
-      surface: 180,
-      rooms: 0,
-      owner: 'Tech Corp Inc.',
-      agent: 'Emily Davis',
-      agentId: 'DYN-9012',
-      description: 'Local commercial stratégiquement situé',
-      features: ['Vitrine', 'Bureau', 'Stockage', 'Accès handicapé'],
-    },
-  ]);
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<PropertyInsert>>({
+    type: 'house',
+    address: '',
+    coordinates: { lat: 34.0522, lng: -118.2437 },
+    status: 'available',
+    price: 0,
+    surface: 0,
+    rooms: 0,
+    agent: '',
+    agent_id: '',
+    description: '',
+    features: [],
+    property_number: '',
+  });
+
+  // Hook Supabase
+  const { properties, isLoading, error, addProperty, updateProperty, deleteProperty } = useSupabaseProperties();
 
   const filteredProperties = properties.filter((property) => {
     const matchesSearch =
       property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.propertyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.property_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       property.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || property.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || property.status === selectedStatus;
@@ -125,8 +80,67 @@ export default function PropertiesPage() {
 
   const totalValue = properties.reduce((sum, p) => sum + p.price, 0);
   const totalRentIncome = properties
-    .filter((p) => p.status === 'rented' && p.rentPrice)
-    .reduce((sum, p) => sum + (p.rentPrice || 0), 0);
+    .filter((p) => p.status === 'rented' && p.rent_price)
+    .reduce((sum, p) => sum + (p.rent_price || 0), 0);
+
+  // Handlers
+  const handleCreate = () => {
+    setEditingProperty(null);
+    setFormData({
+      type: 'house',
+      address: '',
+      coordinates: { lat: 34.0522, lng: -118.2437 },
+      status: 'available',
+      price: 0,
+      surface: 0,
+      rooms: 0,
+      agent: '',
+      agent_id: '',
+      description: '',
+      features: [],
+      property_number: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (property: Property) => {
+    setViewingProperty(property);
+  };
+
+  const handleEdit = (property: Property) => {
+    setEditingProperty(property);
+    setFormData(property);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      const success = await deleteProperty(deletingId);
+      if (success) {
+        setShowDeleteConfirm(false);
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingProperty) {
+      await updateProperty(editingProperty.id, formData);
+    } else {
+      const propertyData: PropertyInsert = {
+        property_number: `PROP-${new Date().getFullYear()}-${String(properties.length + 1).padStart(3, '0')}`,
+        ...formData as PropertyInsert,
+      };
+      await addProperty(propertyData);
+    }
+    setShowModal(false);
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -147,7 +161,7 @@ export default function PropertiesPage() {
             <Map className="w-4 h-4" />
             {showMap ? 'Voir la liste' : 'Carte interactive'}
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouvelle propriété
           </Button>
@@ -303,7 +317,7 @@ export default function PropertiesPage() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
-                          <span>{property.propertyNumber}</span>
+                          <span>{property.property_number}</span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
@@ -321,11 +335,11 @@ export default function PropertiesPage() {
                             ${property.price.toLocaleString()}
                           </p>
                         </div>
-                        {property.rentPrice && (
+                        {property.rent_price && (
                           <div>
                             <p className="text-gray-400">Loyer hebdomadaire</p>
                             <p className="text-warning-500 font-bold text-lg">
-                              ${property.rentPrice.toLocaleString()}
+                              ${property.rent_price.toLocaleString()}
                             </p>
                           </div>
                         )}
@@ -357,7 +371,7 @@ export default function PropertiesPage() {
                         <div>
                           <p className="text-gray-400">Agent responsable</p>
                           <p className="text-white font-medium">
-                            {property.agent} ({property.agentId})
+                            {property.agent} ({property.agent_id})
                           </p>
                         </div>
                         {property.tenant && (
@@ -382,15 +396,26 @@ export default function PropertiesPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="secondary" size="sm" className="gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Carte
-                    </Button>
-                    <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                    <button
+                      onClick={() => handleView(property)}
+                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Voir les détails"
+                    >
                       <Eye className="w-4 h-4 text-gray-400" />
                     </button>
-                    <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                    <button
+                      onClick={() => handleEdit(property)}
+                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Modifier"
+                    >
                       <Edit className="w-4 h-4 text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(property.id)}
+                      className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4 text-error-500" />
                     </button>
                   </div>
                 </div>
@@ -404,6 +429,400 @@ export default function PropertiesPage() {
               <p className="text-gray-400">Aucune propriété trouvée</p>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">
+                {editingProperty ? 'Modifier la propriété' : 'Nouvelle propriété'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type de propriété
+                  </label>
+                  <select
+                    value={formData.type || 'house'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  >
+                    <option value="house">Maison</option>
+                    <option value="apartment">Appartement</option>
+                    <option value="commercial">Local commercial</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status || 'available'}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  >
+                    <option value="available">Disponible</option>
+                    <option value="rented">Loué</option>
+                    <option value="sold">Vendu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Adresse
+                </label>
+                <input
+                  type="text"
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Prix de vente ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.price || 0}
+                    onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Surface (m²)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.surface || 0}
+                    onChange={(e) => setFormData({ ...formData, surface: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Pièces
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.rooms || 0}
+                    onChange={(e) => setFormData({ ...formData, rooms: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Loyer hebdomadaire ($ - optionnel)
+                </label>
+                <input
+                  type="number"
+                  value={formData.rent_price || ''}
+                  onChange={(e) => setFormData({ ...formData, rentPrice: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Agent responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.agent || ''}
+                    onChange={(e) => setFormData({ ...formData, agent: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Agent (Dynasty8)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.agent_id || ''}
+                    onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Latitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={formData.coordinates?.lat || 34.0522}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      coordinates: {
+                        lat: parseFloat(e.target.value),
+                        lng: formData.coordinates?.lng || -118.2437
+                      }
+                    })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={formData.coordinates?.lng || -118.2437}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      coordinates: {
+                        lat: formData.coordinates?.lat || 34.0522,
+                        lng: parseFloat(e.target.value)
+                      }
+                    })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingProperty ? 'Modifier' : 'Créer'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewingProperty && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-3xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Détails de la propriété</h2>
+              <button
+                onClick={() => setViewingProperty(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Header with badges */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {viewingProperty.address}
+                  </h3>
+                  <Badge variant={propertyTypeLabels[viewingProperty.type].color as any}>
+                    {propertyTypeLabels[viewingProperty.type].label}
+                  </Badge>
+                  <Badge variant={statusLabels[viewingProperty.status].color as any}>
+                    {statusLabels[viewingProperty.status].label}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>{viewingProperty.propertyNumber}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {viewingProperty.coordinates.lat.toFixed(4)}, {viewingProperty.coordinates.lng.toFixed(4)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <p className="text-sm text-gray-400 mb-2">Description</p>
+                <p className="text-white">{viewingProperty.description}</p>
+              </div>
+
+              {/* Prices */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-success-500/10 border border-success-500/30 rounded-lg p-4">
+                  <p className="text-sm text-gray-400 mb-1">Prix de vente</p>
+                  <p className="text-success-500 font-bold text-2xl">
+                    ${viewingProperty.price.toLocaleString()}
+                  </p>
+                </div>
+                {viewingProperty.rentPrice && (
+                  <div className="bg-warning-500/10 border border-warning-500/30 rounded-lg p-4">
+                    <p className="text-sm text-gray-400 mb-1">Loyer hebdomadaire</p>
+                    <p className="text-warning-500 font-bold text-2xl">
+                      ${viewingProperty.rentPrice.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Surface</p>
+                  <p className="text-white font-medium">{viewingProperty.surface}m²</p>
+                </div>
+                {viewingProperty.rooms > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Pièces</p>
+                    <p className="text-white font-medium">{viewingProperty.rooms} pièces</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Agent responsable</p>
+                  <p className="text-white font-medium">
+                    {viewingProperty.agent} ({viewingProperty.agentId})
+                  </p>
+                </div>
+              </div>
+
+              {/* Tenant/Owner */}
+              {(viewingProperty.tenant || viewingProperty.owner) && (
+                <div className="grid grid-cols-2 gap-6">
+                  {viewingProperty.tenant && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Locataire actuel</p>
+                      <p className="text-white font-medium">{viewingProperty.tenant}</p>
+                    </div>
+                  )}
+                  {viewingProperty.owner && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Propriétaire</p>
+                      <p className="text-white font-medium">{viewingProperty.owner}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Features */}
+              {viewingProperty.features.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-3">Caractéristiques</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {viewingProperty.features.map((feature, idx) => (
+                      <Badge key={idx} variant="info">
+                        {feature}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setViewingProperty(null);
+                  handleEdit(viewingProperty);
+                }}
+                className="flex-1"
+              >
+                Modifier
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setViewingProperty(null)}
+                className="flex-1"
+              >
+                Fermer
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-error-500/10 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-error-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Confirmer la suppression</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Cette action est irréversible
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette propriété ? Toutes les informations
+              associées seront définitivement perdues.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="danger" onClick={confirmDelete} className="flex-1">
+                Supprimer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingId(null);
+                }}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

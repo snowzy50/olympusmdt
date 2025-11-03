@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -19,25 +19,13 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseReports } from '@/hooks/useSupabaseReports';
+import type { Report, ReportInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des rapports opérationnels
  * Créé par Snowzy
  */
-
-interface Report {
-  id: string;
-  type: 'operation' | 'shooting' | 'arrest';
-  reportNumber: string;
-  title: string;
-  officer: string;
-  officerId: string;
-  date: string;
-  location: string;
-  status: 'draft' | 'submitted' | 'validated' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  summary: string;
-}
 
 const reportTypeLabels: Record<string, { label: string; icon: any; color: string }> = {
   operation: { label: 'Opération', icon: Shield, color: 'primary' },
@@ -72,60 +60,19 @@ export default function ReportsPage() {
     type: 'operation',
     title: '',
     officer: '',
-    officerId: '',
+    officer_id: '',
     location: '',
     status: 'draft',
     priority: 'medium',
     summary: '',
   });
 
-  // Données de démonstration
-  const [reports, setReports] = useState<Report[]>([
-    {
-      id: '1',
-      type: 'operation',
-      reportNumber: 'RPT-OP-2024-001',
-      title: 'Contrôle routier - Grande avenue',
-      officer: 'Agent Smith',
-      officerId: 'SASP-1234',
-      date: '2024-11-02T14:30:00',
-      location: 'Grande Avenue, Los Santos',
-      status: 'validated',
-      priority: 'medium',
-      summary: 'Contrôle routier de routine avec 15 véhicules contrôlés, 3 amendes distribuées.',
-    },
-    {
-      id: '2',
-      type: 'shooting',
-      reportNumber: 'RPT-SHO-2024-005',
-      title: 'Fusillade dans le quartier Grove Street',
-      officer: 'Sergent Johnson',
-      officerId: 'SASP-5678',
-      date: '2024-11-02T22:15:00',
-      location: 'Grove Street',
-      status: 'submitted',
-      priority: 'urgent',
-      summary: 'Échange de tirs entre deux gangs rivaux. 2 blessés, 3 suspects arrêtés.',
-    },
-    {
-      id: '3',
-      type: 'arrest',
-      reportNumber: 'RPT-ARR-2024-042',
-      title: 'Arrestation pour trafic de stupéfiants',
-      officer: 'Agent Williams',
-      officerId: 'SASP-9012',
-      date: '2024-11-01T18:45:00',
-      location: 'Vinewood Boulevard',
-      status: 'validated',
-      priority: 'high',
-      summary: 'Arrestation d\'un suspect en flagrant délit de vente de stupéfiants.',
-    },
-  ]);
+  const { reports, isLoading, error, addReport, updateReport, deleteReport } = useSupabaseReports();
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.reportNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.report_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.officer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || report.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || report.status === selectedStatus;
@@ -139,7 +86,7 @@ export default function ReportsPage() {
       type: 'operation',
       title: '',
       officer: '',
-      officerId: '',
+      officer_id: '',
       location: '',
       status: 'draft',
       priority: 'medium',
@@ -163,31 +110,26 @@ export default function ReportsPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      setReports(reports.filter((r) => r.id !== deletingId));
+      await deleteReport(deletingId);
       setShowDeleteConfirm(false);
       setDeletingId(null);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingReport) {
-      setReports(
-        reports.map((r) =>
-          r.id === editingReport.id ? { ...r, ...formData } as Report : r
-        )
-      );
+      await updateReport(editingReport.id, formData);
     } else {
       const typePrefix = formData.type === 'operation' ? 'OP' : formData.type === 'shooting' ? 'SHO' : 'ARR';
-      const newReport: Report = {
-        id: Date.now().toString(),
-        reportNumber: `RPT-${typePrefix}-${new Date().getFullYear()}-${String(reports.length + 1).padStart(3, '0')}`,
+      const reportData: ReportInsert = {
+        ...formData as ReportInsert,
+        report_number: `RPT-${typePrefix}-${new Date().getFullYear()}-${String(reports.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString(),
-        ...formData as Report,
       };
-      setReports([...reports, newReport]);
+      await addReport(reportData);
     }
     setShowModal(false);
   };
@@ -323,7 +265,7 @@ export default function ReportsPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-400 mb-2">
-                        {report.reportNumber}
+                        {report.report_number}
                       </p>
                       <p className="text-gray-300 mb-3">{report.summary}</p>
                     </div>
@@ -332,7 +274,7 @@ export default function ReportsPage() {
                       <div>
                         <p className="text-gray-400">Agent</p>
                         <p className="text-white font-medium">
-                          {report.officer} ({report.officerId})
+                          {report.officer} ({report.officer_id})
                         </p>
                       </div>
                       <div>
@@ -468,8 +410,8 @@ export default function ReportsPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.officerId}
-                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    value={formData.officer_id}
+                    onChange={(e) => setFormData({ ...formData, officer_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -577,7 +519,7 @@ export default function ReportsPage() {
                 <div>
                   <p className="text-sm text-gray-400">Agent</p>
                   <p className="text-lg font-medium text-white">
-                    {viewingReport.officer} ({viewingReport.officerId})
+                    {viewingReport.officer} ({viewingReport.officer_id})
                   </p>
                 </div>
                 <div>

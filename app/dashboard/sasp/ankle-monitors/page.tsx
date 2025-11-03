@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -17,27 +17,13 @@ import {
   X,
   Trash2,
 } from 'lucide-react';
+import { useSupabaseAnkleMonitors } from '@/hooks/useSupabaseAnkleMonitors';
+import type { AnkleMonitor, AnkleMonitorInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des bracelets électroniques
  * Créé par Snowzy
  */
-
-interface AnkleMonitor {
-  id: string;
-  monitorNumber: string;
-  citizenName: string;
-  citizenId: string;
-  deviceId: string;
-  status: 'active' | 'inactive' | 'violation' | 'low_battery';
-  installDate: string;
-  removalDate?: string;
-  assignedOfficer: string;
-  officerId: string;
-  lastLocation?: string;
-  batteryLevel: number;
-  violations: number;
-}
 
 const statusLabels: Record<string, { label: string; color: string; icon: any }> = {
   active: { label: 'Actif', color: 'success', icon: CheckCircle },
@@ -54,69 +40,26 @@ export default function AnkleMonitorsPage() {
   const [viewingMonitor, setViewingMonitor] = useState<AnkleMonitor | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<AnkleMonitor>>({
-    citizenName: '',
-    citizenId: '',
-    deviceId: '',
+  const [formData, setFormData] = useState<Partial<AnkleMonitorInsert>>({
+    citizen_name: '',
+    citizen_id: '',
+    device_id: '',
     status: 'active',
-    assignedOfficer: '',
-    officerId: '',
-    lastLocation: '',
-    batteryLevel: 100,
+    assigned_officer: '',
+    officer_id: '',
+    last_location: '',
+    battery_level: 100,
     violations: 0,
   });
 
-  // Données de démonstration
-  const [monitors, setMonitors] = useState<AnkleMonitor[]>([
-    {
-      id: '1',
-      monitorNumber: 'AM-2024-001',
-      citizenName: 'Michael Brown',
-      citizenId: 'CIT-005',
-      deviceId: 'DEV-85472',
-      status: 'active',
-      installDate: '2024-10-15T10:00:00',
-      assignedOfficer: 'Sergent Johnson',
-      officerId: 'SASP-5678',
-      lastLocation: 'Mirror Park, Los Santos',
-      batteryLevel: 85,
-      violations: 0,
-    },
-    {
-      id: '2',
-      monitorNumber: 'AM-2024-002',
-      citizenName: 'David Wilson',
-      citizenId: 'CIT-008',
-      deviceId: 'DEV-85473',
-      status: 'violation',
-      installDate: '2024-09-20T14:30:00',
-      assignedOfficer: 'Agent Williams',
-      officerId: 'SASP-9012',
-      lastLocation: 'Zone interdite - Downtown',
-      batteryLevel: 65,
-      violations: 2,
-    },
-    {
-      id: '3',
-      monitorNumber: 'AM-2024-003',
-      citizenName: 'Sarah Martinez',
-      citizenId: 'CIT-012',
-      deviceId: 'DEV-85474',
-      status: 'low_battery',
-      installDate: '2024-11-01T09:00:00',
-      assignedOfficer: 'Agent Smith',
-      officerId: 'SASP-1234',
-      lastLocation: 'Vinewood Hills',
-      batteryLevel: 15,
-      violations: 0,
-    },
-  ]);
+  // Hook Supabase
+  const { monitors, isLoading, error, addMonitor, updateMonitor, deleteMonitor } = useSupabaseAnkleMonitors();
 
   const filteredMonitors = monitors.filter((monitor) => {
     const matchesSearch =
-      monitor.citizenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      monitor.monitorNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      monitor.deviceId.toLowerCase().includes(searchTerm.toLowerCase());
+      monitor.citizen_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      monitor.monitor_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      monitor.device_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || monitor.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
@@ -131,15 +74,17 @@ export default function AnkleMonitorsPage() {
   const handleCreate = () => {
     setEditingMonitor(null);
     setFormData({
-      citizenName: '',
-      citizenId: '',
-      deviceId: '',
+      citizen_name: '',
+      citizen_id: '',
+      device_id: '',
       status: 'active',
-      assignedOfficer: '',
-      officerId: '',
-      lastLocation: '',
-      batteryLevel: 100,
+      assigned_officer: '',
+      officer_id: '',
+      last_location: '',
+      battery_level: 100,
       violations: 0,
+      monitor_number: '',
+      install_date: '',
     });
     setShowModal(true);
   };
@@ -159,30 +104,27 @@ export default function AnkleMonitorsPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      setMonitors(monitors.filter((m) => m.id !== deletingId));
-      setShowDeleteConfirm(false);
-      setDeletingId(null);
+      const success = await deleteMonitor(deletingId);
+      if (success) {
+        setShowDeleteConfirm(false);
+        setDeletingId(null);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingMonitor) {
-      setMonitors(
-        monitors.map((m) =>
-          m.id === editingMonitor.id ? { ...m, ...formData } as AnkleMonitor : m
-        )
-      );
+      await updateMonitor(editingMonitor.id, formData);
     } else {
-      const newMonitor: AnkleMonitor = {
-        id: Date.now().toString(),
-        monitorNumber: `AM-${new Date().getFullYear()}-${String(monitors.length + 1).padStart(3, '0')}`,
-        installDate: new Date().toISOString(),
-        ...formData as AnkleMonitor,
+      const monitorData: AnkleMonitorInsert = {
+        ...formData as AnkleMonitorInsert,
+        monitor_number: `AM-${new Date().getFullYear()}-${String(monitors.length + 1).padStart(3, '0')}`,
+        install_date: new Date().toISOString(),
       };
-      setMonitors([...monitors, newMonitor]);
+      await addMonitor(monitorData);
     }
     setShowModal(false);
   };
@@ -310,7 +252,7 @@ export default function AnkleMonitorsPage() {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-white">
-                          {monitor.citizenName}
+                          {monitor.citizen_name}
                         </h3>
                         <Badge variant={statusInfo.color as any} className="flex items-center gap-1">
                           <StatusIcon className="w-3 h-3" />
@@ -323,11 +265,11 @@ export default function AnkleMonitorsPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <span>{monitor.monitorNumber}</span>
+                        <span>{monitor.monitor_number}</span>
                         <span>•</span>
-                        <span>Appareil: {monitor.deviceId}</span>
+                        <span>Appareil: {monitor.device_id}</span>
                         <span>•</span>
-                        <span>{monitor.citizenId}</span>
+                        <span>{monitor.citizen_id}</span>
                       </div>
                     </div>
 
@@ -335,13 +277,13 @@ export default function AnkleMonitorsPage() {
                       <div>
                         <p className="text-gray-400">Agent responsable</p>
                         <p className="text-white font-medium">
-                          {monitor.assignedOfficer}
+                          {monitor.assigned_officer}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-400">Date d'installation</p>
                         <p className="text-white font-medium">
-                          {new Date(monitor.installDate).toLocaleDateString('fr-FR')}
+                          {new Date(monitor.install_date).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                       <div>
@@ -349,14 +291,14 @@ export default function AnkleMonitorsPage() {
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-primary-500" />
                           <p className="text-white font-medium">
-                            {monitor.lastLocation || 'Inconnue'}
+                            {monitor.last_location || 'Inconnue'}
                           </p>
                         </div>
                       </div>
                       <div>
                         <p className="text-gray-400">Batterie</p>
-                        <p className={`font-bold ${getBatteryColor(monitor.batteryLevel)}`}>
-                          {monitor.batteryLevel}%
+                        <p className={`font-bold ${getBatteryColor(monitor.battery_level)}`}>
+                          {monitor.battery_level}%
                         </p>
                       </div>
                     </div>
@@ -365,13 +307,13 @@ export default function AnkleMonitorsPage() {
                     <div className="w-full bg-gray-700 rounded-full h-2">
                       <div
                         className={`h-full rounded-full transition-all ${
-                          monitor.batteryLevel >= 50
+                          monitor.battery_level >= 50
                             ? 'bg-success-500'
-                            : monitor.batteryLevel >= 20
+                            : monitor.battery_level >= 20
                             ? 'bg-warning-500'
                             : 'bg-error-500'
                         }`}
-                        style={{ width: `${monitor.batteryLevel}%` }}
+                        style={{ width: `${monitor.battery_level}%` }}
                       />
                     </div>
                   </div>
@@ -436,8 +378,8 @@ export default function AnkleMonitorsPage() {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Nom du citoyen *</label>
                   <input
                     type="text"
-                    value={formData.citizenName}
-                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    value={formData.citizen_name}
+                    onChange={(e) => setFormData({ ...formData, citizen_name: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -446,8 +388,8 @@ export default function AnkleMonitorsPage() {
                   <label className="block text-sm font-medium text-gray-400 mb-2">ID Citoyen *</label>
                   <input
                     type="text"
-                    value={formData.citizenId}
-                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    value={formData.citizen_id}
+                    onChange={(e) => setFormData({ ...formData, citizen_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -457,8 +399,8 @@ export default function AnkleMonitorsPage() {
                 <label className="block text-sm font-medium text-gray-400 mb-2">ID Appareil *</label>
                 <input
                   type="text"
-                  value={formData.deviceId}
-                  onChange={(e) => setFormData({ ...formData, deviceId: e.target.value })}
+                  value={formData.device_id}
+                  onChange={(e) => setFormData({ ...formData, device_id: e.target.value })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   required
                 />
@@ -468,8 +410,8 @@ export default function AnkleMonitorsPage() {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Agent responsable *</label>
                   <input
                     type="text"
-                    value={formData.assignedOfficer}
-                    onChange={(e) => setFormData({ ...formData, assignedOfficer: e.target.value })}
+                    value={formData.assigned_officer}
+                    onChange={(e) => setFormData({ ...formData, assigned_officer: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -478,8 +420,8 @@ export default function AnkleMonitorsPage() {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Matricule *</label>
                   <input
                     type="text"
-                    value={formData.officerId}
-                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    value={formData.officer_id}
+                    onChange={(e) => setFormData({ ...formData, officer_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -506,8 +448,8 @@ export default function AnkleMonitorsPage() {
                     type="number"
                     min="0"
                     max="100"
-                    value={formData.batteryLevel}
-                    onChange={(e) => setFormData({ ...formData, batteryLevel: parseInt(e.target.value) })}
+                    value={formData.battery_level}
+                    onChange={(e) => setFormData({ ...formData, battery_level: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -517,8 +459,8 @@ export default function AnkleMonitorsPage() {
                 <label className="block text-sm font-medium text-gray-400 mb-2">Dernière position</label>
                 <input
                   type="text"
-                  value={formData.lastLocation}
-                  onChange={(e) => setFormData({ ...formData, lastLocation: e.target.value })}
+                  value={formData.last_location}
+                  onChange={(e) => setFormData({ ...formData, last_location: e.target.value })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -547,7 +489,7 @@ export default function AnkleMonitorsPage() {
             </div>
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-bold text-white">{viewingMonitor.citizenName}</h3>
+                <h3 className="text-2xl font-bold text-white">{viewingMonitor.citizen_name}</h3>
                 <Badge variant={statusLabels[viewingMonitor.status].color as any}>
                   {statusLabels[viewingMonitor.status].label}
                 </Badge>
@@ -558,31 +500,31 @@ export default function AnkleMonitorsPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-gray-400">Numéro bracelet</p>
-                  <p className="text-lg font-medium text-white">{viewingMonitor.monitorNumber}</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.monitor_number}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">ID Appareil</p>
-                  <p className="text-lg font-medium text-white">{viewingMonitor.deviceId}</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.device_id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">ID Citoyen</p>
-                  <p className="text-lg font-medium text-white">{viewingMonitor.citizenId}</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.citizen_id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Date d'installation</p>
                   <p className="text-lg font-medium text-white">
-                    {new Date(viewingMonitor.installDate).toLocaleString('fr-FR')}
+                    {new Date(viewingMonitor.install_date).toLocaleString('fr-FR')}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Agent responsable</p>
                   <p className="text-lg font-medium text-white">
-                    {viewingMonitor.assignedOfficer} ({viewingMonitor.officerId})
+                    {viewingMonitor.assigned_officer} ({viewingMonitor.officer_id})
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Dernière position</p>
-                  <p className="text-lg font-medium text-white">{viewingMonitor.lastLocation || 'Inconnue'}</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.last_location || 'Inconnue'}</p>
                 </div>
               </div>
               <div>
@@ -591,17 +533,17 @@ export default function AnkleMonitorsPage() {
                   <div className="flex-1 bg-gray-700 rounded-full h-3">
                     <div
                       className={`h-full rounded-full ${
-                        viewingMonitor.batteryLevel >= 50
+                        viewingMonitor.battery_level >= 50
                           ? 'bg-success-500'
-                          : viewingMonitor.batteryLevel >= 20
+                          : viewingMonitor.battery_level >= 20
                           ? 'bg-warning-500'
                           : 'bg-error-500'
                       }`}
-                      style={{ width: `${viewingMonitor.batteryLevel}%` }}
+                      style={{ width: `${viewingMonitor.battery_level}%` }}
                     />
                   </div>
-                  <p className={`text-xl font-bold ${getBatteryColor(viewingMonitor.batteryLevel)}`}>
-                    {viewingMonitor.batteryLevel}%
+                  <p className={`text-xl font-bold ${getBatteryColor(viewingMonitor.battery_level)}`}>
+                    {viewingMonitor.battery_level}%
                   </p>
                 </div>
               </div>

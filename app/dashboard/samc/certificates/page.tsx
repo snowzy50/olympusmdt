@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -15,27 +15,16 @@ import {
   Edit,
   Download,
   Share2,
+  X,
+  Trash2,
 } from 'lucide-react';
+import { useSupabaseCertificates } from '@/hooks/useSupabaseCertificates';
+import type { Certificate, CertificateInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des certificats médicaux
  * Créé par Snowzy
  */
-
-interface Certificate {
-  id: string;
-  certificateNumber: string;
-  type: 'medical' | 'death' | 'ppa' | 'incident';
-  patientName: string;
-  patientId: string;
-  issuedBy: string;
-  doctorId: string;
-  date: string;
-  status: 'valid' | 'revoked' | 'expired';
-  description: string;
-  validUntil?: string;
-  sharedWith?: string[];
-}
 
 const certificateTypeLabels: Record<string, { label: string; icon: any; color: string }> = {
   medical: { label: 'Certificat médical', icon: FileText, color: 'info' },
@@ -55,73 +44,96 @@ export default function CertificatesPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Données de démonstration
-  const [certificates] = useState<Certificate[]>([
-    {
-      id: '1',
-      certificateNumber: 'CERT-MED-2024-001',
-      type: 'medical',
-      patientName: 'John Smith',
-      patientId: 'PAT-001',
-      issuedBy: 'Dr. Martinez',
-      doctorId: 'SAMC-1234',
-      date: '2024-11-02T14:30:00',
-      status: 'valid',
-      description: 'Certificat médical attestant de la fracture du bras gauche',
-      validUntil: '2024-12-02',
-      sharedWith: ['SASP'],
-    },
-    {
-      id: '2',
-      certificateNumber: 'CERT-PPA-2024-015',
-      type: 'ppa',
-      patientName: 'Michael Brown',
-      patientId: 'PAT-005',
-      issuedBy: 'Dr. Johnson',
-      doctorId: 'SAMC-5678',
-      date: '2024-10-20T10:00:00',
-      status: 'valid',
-      description: 'Aptitude médicale confirmée pour le port d\'arme',
-      validUntil: '2025-10-20',
-      sharedWith: ['SASP', 'DOJ'],
-    },
-    {
-      id: '3',
-      certificateNumber: 'CERT-DEATH-2024-008',
-      type: 'death',
-      patientName: 'Robert Wilson',
-      patientId: 'PAT-012',
-      issuedBy: 'Dr. Williams',
-      doctorId: 'SAMC-9012',
-      date: '2024-10-28T22:45:00',
-      status: 'valid',
-      description: 'Décès par arrêt cardiaque suite à traumatisme sévère',
-      sharedWith: ['SASP', 'DOJ'],
-    },
-    {
-      id: '4',
-      certificateNumber: 'CERT-INC-2024-003',
-      type: 'incident',
-      patientName: 'Jane Doe',
-      patientId: 'PAT-002',
-      issuedBy: 'Dr. Martinez',
-      doctorId: 'SAMC-1234',
-      date: '2024-11-01T18:30:00',
-      status: 'valid',
-      description: 'Incident médical: réaction allergique sévère au médicament X',
-      sharedWith: ['SAMC'],
-    },
-  ]);
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
+  const [viewingCertificate, setViewingCertificate] = useState<Certificate | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<CertificateInsert>>({
+    type: 'medical',
+    patient_name: '',
+    patient_id: '',
+    issued_by: '',
+    doctor_id: '',
+    status: 'valid',
+    description: '',
+    certificate_number: '',
+    date: '',
+  });
+
+  // Hook Supabase
+  const { certificates, isLoading, error, addCertificate, updateCertificate, deleteCertificate } = useSupabaseCertificates();
 
   const filteredCertificates = certificates.filter((cert) => {
     const matchesSearch =
-      cert.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.certificateNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.certificate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || cert.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || cert.status === selectedStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  // Handlers
+  const handleCreate = () => {
+    setEditingCertificate(null);
+    setFormData({
+      type: 'medical',
+      patient_name: '',
+      patient_id: '',
+      issued_by: '',
+      doctor_id: '',
+      status: 'valid',
+      description: '',
+      certificate_number: '',
+      date: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (cert: Certificate) => {
+    setViewingCertificate(cert);
+  };
+
+  const handleEdit = (cert: Certificate) => {
+    setEditingCertificate(cert);
+    setFormData(cert);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      const success = await deleteCertificate(deletingId);
+      if (success) {
+        setShowDeleteConfirm(false);
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingCertificate) {
+      await updateCertificate(editingCertificate.id, formData);
+    } else {
+      const typePrefix = formData.type === 'medical' ? 'MED' :
+                         formData.type === 'death' ? 'DEATH' :
+                         formData.type === 'ppa' ? 'PPA' : 'INC';
+      const certData: CertificateInsert = {
+        certificate_number: `CERT-${typePrefix}-${new Date().getFullYear()}-${String(certificates.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString(),
+        ...formData as CertificateInsert,
+      };
+      await addCertificate(certData);
+    }
+    setShowModal(false);
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -138,7 +150,7 @@ export default function CertificatesPage() {
             <Download className="w-4 h-4" />
             Exporter
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouveau certificat
           </Button>
@@ -240,7 +252,7 @@ export default function CertificatesPage() {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-white">
-                          {cert.patientName}
+                          {cert.patient_name}
                         </h3>
                         <Badge variant={typeConfig.color as any}>
                           {typeConfig.label}
@@ -250,7 +262,7 @@ export default function CertificatesPage() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
-                        <span>{cert.certificateNumber}</span>
+                        <span>{cert.certificate_number}</span>
                         <span>•</span>
                         <span>{cert.patientId}</span>
                       </div>
@@ -258,13 +270,13 @@ export default function CertificatesPage() {
                     </div>
 
                     {/* Shared With */}
-                    {cert.sharedWith && cert.sharedWith.length > 0 && (
+                    {cert.shared_with && cert.shared_with.length > 0 && (
                       <div className="flex items-center gap-2">
                         <Share2 className="w-4 h-4 text-primary-500" />
                         <p className="text-sm text-gray-400">
                           Partagé avec:{' '}
                           <span className="text-white">
-                            {cert.sharedWith.join(', ')}
+                            {cert.shared_with.join(', ')}
                           </span>
                         </p>
                       </div>
@@ -274,7 +286,7 @@ export default function CertificatesPage() {
                       <div>
                         <p className="text-gray-400">Émis par</p>
                         <p className="text-white font-medium">
-                          {cert.issuedBy} ({cert.doctorId})
+                          {cert.issued_by} ({cert.doctorId})
                         </p>
                       </div>
                       <div>
@@ -283,11 +295,11 @@ export default function CertificatesPage() {
                           {new Date(cert.date).toLocaleString('fr-FR')}
                         </p>
                       </div>
-                      {cert.validUntil && (
+                      {cert.valid_until && (
                         <div>
                           <p className="text-gray-400">Valide jusqu'au</p>
                           <p className="text-white font-medium">
-                            {new Date(cert.validUntil).toLocaleDateString('fr-FR')}
+                            {new Date(cert.valid_until).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
                       )}
@@ -297,14 +309,26 @@ export default function CertificatesPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 ml-4">
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleView(cert)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Voir les détails"
+                  >
                     <Eye className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleEdit(cert)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Modifier"
+                  >
                     <Edit className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-                    <Download className="w-4 h-4 text-gray-400" />
+                  <button
+                    onClick={() => handleDelete(cert.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-error-500" />
                   </button>
                   <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
                     <Share2 className="w-4 h-4 text-primary-500" />
@@ -334,6 +358,309 @@ export default function CertificatesPage() {
           </Card>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">
+                {editingCertificate ? 'Modifier le certificat' : 'Nouveau certificat'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type de certificat
+                  </label>
+                  <select
+                    value={formData.type || 'medical'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  >
+                    <option value="medical">Certificat médical</option>
+                    <option value="death">Certificat de décès</option>
+                    <option value="ppa">Certificat PPA</option>
+                    <option value="incident">Rapport d'incident</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status || 'valid'}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  >
+                    <option value="valid">Valide</option>
+                    <option value="revoked">Révoqué</option>
+                    <option value="expired">Expiré</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nom du patient
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.patient_name || ''}
+                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Patient
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.patient_id || ''}
+                    onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Émis par
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.issued_by || ''}
+                    onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Médecin (SAMC)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.doctor_id || ''}
+                    onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Valide jusqu'au (optionnel)
+                </label>
+                <input
+                  type="date"
+                  value={formData.valid_until || ''}
+                  onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingCertificate ? 'Modifier' : 'Créer'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewingCertificate && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-3xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Détails du certificat</h2>
+              <button
+                onClick={() => setViewingCertificate(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Header with badges */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {viewingCertificate.patientName}
+                  </h3>
+                  <Badge variant={certificateTypeLabels[viewingCertificate.type].color as any}>
+                    {certificateTypeLabels[viewingCertificate.type].label}
+                  </Badge>
+                  <Badge variant={statusLabels[viewingCertificate.status].color as any}>
+                    {statusLabels[viewingCertificate.status].label}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>{viewingCertificate.certificateNumber}</span>
+                  <span>•</span>
+                  <span>{viewingCertificate.patientId}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <p className="text-sm text-gray-400 mb-2">Description</p>
+                <p className="text-white">{viewingCertificate.description}</p>
+              </div>
+
+              {/* Main information */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Émis par</p>
+                  <p className="text-white font-medium">
+                    {viewingCertificate.issuedBy} ({viewingCertificate.doctorId})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Date d'émission</p>
+                  <p className="text-white font-medium">
+                    {new Date(viewingCertificate.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                {viewingCertificate.validUntil && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Valide jusqu'au</p>
+                    <p className="text-white font-medium">
+                      {new Date(viewingCertificate.validUntil).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Shared With */}
+              {viewingCertificate.sharedWith && viewingCertificate.sharedWith.length > 0 && (
+                <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Share2 className="w-5 h-5 text-primary-500" />
+                    <p className="font-semibold text-white">Partagé avec</p>
+                  </div>
+                  <p className="text-gray-300">
+                    {viewingCertificate.sharedWith.join(', ')}
+                  </p>
+                </div>
+              )}
+
+              {/* Warning for expired/revoked */}
+              {(viewingCertificate.status === 'expired' || viewingCertificate.status === 'revoked') && (
+                <div className="bg-error-500/10 border border-error-500/30 rounded-lg p-4 flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-error-500" />
+                  <p className="text-error-500">
+                    {viewingCertificate.status === 'expired'
+                      ? 'Ce certificat a expiré et n\'est plus valide'
+                      : 'Ce certificat a été révoqué'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setViewingCertificate(null);
+                  handleEdit(viewingCertificate);
+                }}
+                className="flex-1"
+              >
+                Modifier
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setViewingCertificate(null)}
+                className="flex-1"
+              >
+                Fermer
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-error-500/10 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-error-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Confirmer la suppression</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Cette action est irréversible
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Êtes-vous sûr de vouloir supprimer ce certificat ? Toutes les informations
+              associées seront définitivement perdues.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="danger" onClick={confirmDelete} className="flex-1">
+                Supprimer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingId(null);
+                }}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

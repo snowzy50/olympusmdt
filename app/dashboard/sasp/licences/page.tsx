@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -17,24 +17,13 @@ import {
   X,
   AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseLicenses } from '@/hooks/useSupabaseLicenses';
+import type { License, LicenseInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des permis de conduire
  * Créé par Snowzy
  */
-
-interface License {
-  id: string;
-  citizenId: string;
-  citizenName: string;
-  licenseNumber: string;
-  type: 'car' | 'motorcycle' | 'truck' | 'boat' | 'aircraft';
-  status: 'valid' | 'suspended' | 'revoked' | 'expired';
-  issueDate: string;
-  expiryDate: string;
-  points: number;
-  restrictions?: string;
-}
 
 const licenseTypeLabels: Record<string, string> = {
   car: 'Voiture',
@@ -63,56 +52,20 @@ export default function LicensesPage() {
 
   // Form state
   const [formData, setFormData] = useState<Partial<License>>({
-    citizenName: '',
-    citizenId: '',
+    citizen_name: '',
+    citizen_id: '',
     type: 'car',
     status: 'valid',
     points: 12,
     restrictions: '',
   });
 
-  // Données
-  const [licenses, setLicenses] = useState<License[]>([
-    {
-      id: '1',
-      citizenId: 'CIT-001',
-      citizenName: 'John Smith',
-      licenseNumber: 'LIC-2024-001',
-      type: 'car',
-      status: 'valid',
-      issueDate: '2024-01-15',
-      expiryDate: '2029-01-15',
-      points: 12,
-      restrictions: 'Port de lunettes obligatoire',
-    },
-    {
-      id: '2',
-      citizenId: 'CIT-002',
-      citizenName: 'Jane Doe',
-      licenseNumber: 'LIC-2024-002',
-      type: 'motorcycle',
-      status: 'suspended',
-      issueDate: '2023-06-20',
-      expiryDate: '2028-06-20',
-      points: 4,
-    },
-    {
-      id: '3',
-      citizenId: 'CIT-003',
-      citizenName: 'Robert Johnson',
-      licenseNumber: 'LIC-2023-156',
-      type: 'truck',
-      status: 'valid',
-      issueDate: '2023-03-10',
-      expiryDate: '2028-03-10',
-      points: 12,
-    },
-  ]);
+  const { licenses, isLoading, error, addLicense, updateLicense, deleteLicense } = useSupabaseLicenses();
 
   const filteredLicenses = licenses.filter((license) => {
     const matchesSearch =
-      license.citizenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      license.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      license.citizen_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      license.license_number.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || license.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || license.status === selectedStatus;
     return matchesSearch && matchesType && matchesStatus;
@@ -136,8 +89,8 @@ export default function LicensesPage() {
   const handleCreate = () => {
     setEditingLicense(null);
     setFormData({
-      citizenName: '',
-      citizenId: '',
+      citizen_name: '',
+      citizen_id: '',
       type: 'car',
       status: 'valid',
       points: 12,
@@ -161,36 +114,31 @@ export default function LicensesPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      setLicenses(licenses.filter((l) => l.id !== deletingId));
+      await deleteLicense(deletingId);
       setShowDeleteConfirm(false);
       setDeletingId(null);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingLicense) {
       // Update existing license
-      setLicenses(
-        licenses.map((l) =>
-          l.id === editingLicense.id ? { ...l, ...formData } as License : l
-        )
-      );
+      await updateLicense(editingLicense.id, formData);
     } else {
       // Create new license
-      const newLicense: License = {
-        id: Date.now().toString(),
-        licenseNumber: `LIC-${new Date().getFullYear()}-${String(licenses.length + 1).padStart(3, '0')}`,
-        issueDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 5))
+      const licenseData: LicenseInsert = {
+        ...formData as LicenseInsert,
+        license_number: `LIC-${new Date().getFullYear()}-${String(licenses.length + 1).padStart(3, '0')}`,
+        issue_date: new Date().toISOString().split('T')[0],
+        expiry_date: new Date(new Date().setFullYear(new Date().getFullYear() + 5))
           .toISOString()
           .split('T')[0],
-        ...formData as License,
       };
-      setLicenses([...licenses, newLicense]);
+      await addLicense(licenseData);
     }
 
     setShowModal(false);
@@ -335,13 +283,13 @@ export default function LicensesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-primary-500" />
-                        <span className="text-white font-medium">{license.licenseNumber}</span>
+                        <span className="text-white font-medium">{license.license_number}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-white font-medium">{license.citizenName}</p>
-                        <p className="text-sm text-gray-400">{license.citizenId}</p>
+                        <p className="text-white font-medium">{license.citizen_name}</p>
+                        <p className="text-sm text-gray-400">{license.citizen_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -371,7 +319,7 @@ export default function LicensesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-300">
-                        {new Date(license.expiryDate).toLocaleDateString('fr-FR')}
+                        {new Date(license.expiry_date).toLocaleDateString('fr-FR')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -439,8 +387,8 @@ export default function LicensesPage() {
                   <input
                     type="text"
                     required
-                    value={formData.citizenName}
-                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    value={formData.citizen_name}
+                    onChange={(e) => setFormData({ ...formData, citizen_name: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -452,8 +400,8 @@ export default function LicensesPage() {
                   <input
                     type="text"
                     required
-                    value={formData.citizenId}
-                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    value={formData.citizen_id}
+                    onChange={(e) => setFormData({ ...formData, citizen_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -558,8 +506,8 @@ export default function LicensesPage() {
                     <FileText className="w-8 h-8 text-primary-500" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-white">{viewingLicense.citizenName}</h3>
-                    <p className="text-gray-400">{viewingLicense.licenseNumber}</p>
+                    <h3 className="text-2xl font-bold text-white">{viewingLicense.citizen_name}</h3>
+                    <p className="text-gray-400">{viewingLicense.license_number}</p>
                   </div>
                 </div>
                 <Badge
@@ -575,7 +523,7 @@ export default function LicensesPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-gray-400 mb-1">ID Citoyen</p>
-                  <p className="text-white font-semibold">{viewingLicense.citizenId}</p>
+                  <p className="text-white font-semibold">{viewingLicense.citizen_id}</p>
                 </div>
 
                 <div>
@@ -588,14 +536,14 @@ export default function LicensesPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Date d'émission</p>
                   <p className="text-white font-semibold">
-                    {new Date(viewingLicense.issueDate).toLocaleDateString('fr-FR')}
+                    {new Date(viewingLicense.issue_date).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Date d'expiration</p>
                   <p className="text-white font-semibold">
-                    {new Date(viewingLicense.expiryDate).toLocaleDateString('fr-FR')}
+                    {new Date(viewingLicense.expiry_date).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
 

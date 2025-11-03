@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -15,27 +15,18 @@ import {
   Download,
   ArrowUpRight,
   ArrowDownRight,
+  X,
+  Trash2,
+  AlertTriangle,
+  Edit,
 } from 'lucide-react';
+import { useSupabaseTransactions } from '@/hooks/useSupabaseTransactions';
+import type { Transaction, TransactionInsert } from '@/lib/supabase/client';
 
 /**
  * Module de comptabilité pour Dynasty8
  * Créé par Snowzy
  */
-
-interface Transaction {
-  id: string;
-  transactionNumber: string;
-  type: 'sale' | 'rent' | 'commission' | 'expense';
-  category: string;
-  amount: number;
-  property?: string;
-  agent: string;
-  agentId: string;
-  client?: string;
-  date: string;
-  description: string;
-  status: 'pending' | 'completed' | 'cancelled';
-}
 
 const transactionTypeLabels: Record<string, { label: string; color: string; icon: any }> = {
   sale: { label: 'Vente', color: 'success', icon: TrendingUp },
@@ -56,81 +47,30 @@ export default function AccountingPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('month');
 
-  // Données de démonstration
-  const [transactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      transactionNumber: 'TRX-2024-001',
-      type: 'sale',
-      category: 'Vente propriété',
-      amount: 850000,
-      property: 'PROP-2024-001 - 123 Vinewood Hills',
-      agent: 'Sarah Johnson',
-      agentId: 'DYN-1234',
-      client: 'Michael Brown',
-      date: '2024-11-02T14:30:00',
-      description: 'Vente villa Vinewood Hills',
-      status: 'completed',
-    },
-    {
-      id: '2',
-      transactionNumber: 'TRX-2024-002',
-      type: 'commission',
-      category: 'Commission vente',
-      amount: 42500,
-      property: 'PROP-2024-001 - 123 Vinewood Hills',
-      agent: 'Sarah Johnson',
-      agentId: 'DYN-1234',
-      date: '2024-11-02T15:00:00',
-      description: 'Commission 5% sur vente',
-      status: 'completed',
-    },
-    {
-      id: '3',
-      transactionNumber: 'TRX-2024-003',
-      type: 'rent',
-      category: 'Loyer mensuel',
-      amount: 1500,
-      property: 'PROP-2024-002 - 456 Downtown Apt 12B',
-      agent: 'John Smith',
-      agentId: 'DYN-5678',
-      client: 'Jane Doe',
-      date: '2024-11-01T10:00:00',
-      description: 'Loyer novembre 2024',
-      status: 'completed',
-    },
-    {
-      id: '4',
-      transactionNumber: 'TRX-2024-004',
-      type: 'expense',
-      category: 'Réparation',
-      amount: 3500,
-      property: 'PROP-2024-002 - 456 Downtown Apt 12B',
-      agent: 'John Smith',
-      agentId: 'DYN-5678',
-      date: '2024-10-28T09:00:00',
-      description: 'Réparation plomberie appartement',
-      status: 'completed',
-    },
-    {
-      id: '5',
-      transactionNumber: 'TRX-2024-005',
-      type: 'rent',
-      category: 'Loyer mensuel',
-      amount: 2200,
-      property: 'PROP-2024-015 - 789 Business Loft',
-      agent: 'Emily Davis',
-      agentId: 'DYN-9012',
-      client: 'Tech Startup LLC',
-      date: '2024-11-03T12:00:00',
-      description: 'Loyer novembre 2024',
-      status: 'pending',
-    },
-  ]);
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<TransactionInsert>>({
+    type: 'sale',
+    category: '',
+    amount: 0,
+    agent: '',
+    agent_id: '',
+    description: '',
+    status: 'pending',
+    transaction_number: '',
+    date: '',
+  });
+
+  // Hook Supabase
+  const { transactions, isLoading, error, addTransaction, updateTransaction, deleteTransaction } = useSupabaseTransactions();
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch =
-      transaction.transactionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.transaction_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (transaction.client?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     const matchesType = selectedType === 'all' || transaction.type === selectedType;
@@ -152,6 +92,63 @@ export default function AccountingPage() {
     .filter((t) => t.status === 'pending')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  // Handlers
+  const handleCreate = () => {
+    setEditingTransaction(null);
+    setFormData({
+      type: 'sale',
+      category: '',
+      amount: 0,
+      agent: '',
+      agent_id: '',
+      description: '',
+      status: 'pending',
+      transaction_number: '',
+      date: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (transaction: Transaction) => {
+    setViewingTransaction(transaction);
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setFormData(transaction);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      const success = await deleteTransaction(deletingId);
+      if (success) {
+        setShowDeleteConfirm(false);
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingTransaction) {
+      await updateTransaction(editingTransaction.id, formData);
+    } else {
+      const transactionData: TransactionInsert = {
+        ...formData as TransactionInsert,
+        transaction_number: `TRX-${new Date().getFullYear()}-${String(transactions.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString(),
+      };
+      await addTransaction(transactionData);
+    }
+    setShowModal(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -167,7 +164,7 @@ export default function AccountingPage() {
             <Download className="w-4 h-4" />
             Exporter
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouvelle transaction
           </Button>
@@ -359,7 +356,7 @@ export default function AccountingPage() {
                   >
                     <td className="px-6 py-4">
                       <span className="text-white font-medium">
-                        {transaction.transactionNumber}
+                        {transaction.transaction_number}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -391,7 +388,7 @@ export default function AccountingPage() {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-white">{transaction.agent}</p>
-                        <p className="text-sm text-gray-400">{transaction.agentId}</p>
+                        <p className="text-sm text-gray-400">{transaction.agent_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -406,11 +403,26 @@ export default function AccountingPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleView(transaction)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Voir les détails"
+                        >
                           <Eye className="w-4 h-4 text-gray-400" />
                         </button>
-                        <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-                          <Download className="w-4 h-4 text-gray-400" />
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Modifier"
+                        >
+                          <Edit className="w-4 h-4 text-gray-400" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-error-500" />
                         </button>
                       </div>
                     </td>
@@ -428,6 +440,306 @@ export default function AccountingPage() {
           )}
         </div>
       </Card>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">
+                {editingTransaction ? 'Modifier la transaction' : 'Nouvelle transaction'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type de transaction
+                  </label>
+                  <select
+                    value={formData.type || 'sale'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  >
+                    <option value="sale">Vente</option>
+                    <option value="rent">Loyer</option>
+                    <option value="commission">Commission</option>
+                    <option value="expense">Dépense</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status || 'pending'}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  >
+                    <option value="pending">En attente</option>
+                    <option value="completed">Complété</option>
+                    <option value="cancelled">Annulé</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Catégorie
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.category || ''}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Montant ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.amount || 0}
+                    onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Agent responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.agent || ''}
+                    onChange={(e) => setFormData({ ...formData, agent: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Agent (Dynasty8)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.agent_id || ''}
+                    onChange={(e) => setFormData({ ...formData, agent_id: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Propriété associée (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.property || ''}
+                    onChange={(e) => setFormData({ ...formData, property: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Client (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.client || ''}
+                    onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-success-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingTransaction ? 'Modifier' : 'Créer'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewingTransaction && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-3xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Détails de la transaction</h2>
+              <button
+                onClick={() => setViewingTransaction(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Header with badges */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {viewingTransaction.transaction_number}
+                  </h3>
+                  <Badge variant={transactionTypeLabels[viewingTransaction.type].color as any}>
+                    {transactionTypeLabels[viewingTransaction.type].label}
+                  </Badge>
+                  <Badge variant={statusLabels[viewingTransaction.status].color as any}>
+                    {statusLabels[viewingTransaction.status].label}
+                  </Badge>
+                </div>
+                <p className="text-gray-400">{viewingTransaction.category}</p>
+              </div>
+
+              {/* Amount */}
+              <div className={`${['sale', 'rent', 'commission'].includes(viewingTransaction.type) ? 'bg-success-500/10 border-success-500/30' : 'bg-error-500/10 border-error-500/30'} border rounded-lg p-6`}>
+                <p className="text-sm text-gray-400 mb-1">Montant</p>
+                <p className={`font-bold text-4xl ${['sale', 'rent', 'commission'].includes(viewingTransaction.type) ? 'text-success-500' : 'text-error-500'}`}>
+                  {['sale', 'rent', 'commission'].includes(viewingTransaction.type) ? '+' : '-'}${viewingTransaction.amount.toLocaleString()}
+                </p>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <p className="text-sm text-gray-400 mb-2">Description</p>
+                <p className="text-white">{viewingTransaction.description}</p>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Agent responsable</p>
+                  <p className="text-white font-medium">
+                    {viewingTransaction.agent} ({viewingTransaction.agent_id})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Date</p>
+                  <p className="text-white font-medium">
+                    {new Date(viewingTransaction.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                {viewingTransaction.property && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-400 mb-1">Propriété associée</p>
+                    <p className="text-white font-medium">{viewingTransaction.property}</p>
+                  </div>
+                )}
+                {viewingTransaction.client && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Client</p>
+                    <p className="text-white font-medium">{viewingTransaction.client}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setViewingTransaction(null);
+                  handleEdit(viewingTransaction);
+                }}
+                className="flex-1"
+              >
+                Modifier
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setViewingTransaction(null)}
+                className="flex-1"
+              >
+                Fermer
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-error-500/10 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-error-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Confirmer la suppression</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Cette action est irréversible
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette transaction ? Toutes les informations
+              associées seront définitivement perdues.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+                Supprimer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingId(null);
+                }}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

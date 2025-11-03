@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -15,34 +15,17 @@ import {
   Eye,
   Edit,
   Download,
+  X,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseMedicalRecords } from '@/hooks/useSupabaseMedicalRecords';
+import type { MedicalRecord, MedicalRecordInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des dossiers médicaux et interventions
  * Créé par Snowzy
  */
-
-interface MedicalRecord {
-  id: string;
-  recordNumber: string;
-  patientName: string;
-  patientId: string;
-  type: 'emergency' | 'hospitalization' | 'consultation' | 'checkup';
-  diagnosis: string;
-  treatment: string;
-  doctor: string;
-  doctorId: string;
-  date: string;
-  location: string;
-  status: 'ongoing' | 'completed' | 'follow_up_required';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  prescriptions?: string[];
-  sickLeave?: {
-    startDate: string;
-    endDate: string;
-    reason: string;
-  };
-}
 
 const recordTypeLabels: Record<string, { label: string; icon: any; color: string }> = {
   emergency: { label: 'Urgence', icon: Activity, color: 'error' },
@@ -69,80 +52,99 @@ export default function MedicalRecordsPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Données de démonstration
-  const [records] = useState<MedicalRecord[]>([
-    {
-      id: '1',
-      recordNumber: 'MED-2024-001',
-      patientName: 'John Smith',
-      patientId: 'PAT-001',
-      type: 'emergency',
-      diagnosis: 'Fracture du bras gauche',
-      treatment: 'Plâtre appliqué, antidouleurs prescrits',
-      doctor: 'Dr. Martinez',
-      doctorId: 'SAMC-1234',
-      date: '2024-11-02T14:30:00',
-      location: 'Urgences - SAMC Central',
-      status: 'follow_up_required',
-      priority: 'high',
-      prescriptions: ['Ibuprofène 400mg - 3x/jour', 'Tramadol 50mg - si douleur'],
-      sickLeave: {
-        startDate: '2024-11-02',
-        endDate: '2024-11-16',
-        reason: 'Fracture bras gauche - immobilisation',
-      },
-    },
-    {
-      id: '2',
-      recordNumber: 'MED-2024-002',
-      patientName: 'Jane Doe',
-      patientId: 'PAT-002',
-      type: 'consultation',
-      diagnosis: 'Grippe saisonnière',
-      treatment: 'Repos, hydratation, antipyrétiques',
-      doctor: 'Dr. Johnson',
-      doctorId: 'SAMC-5678',
-      date: '2024-11-01T10:15:00',
-      location: 'Consultation - SAMC Central',
-      status: 'completed',
-      priority: 'low',
-      prescriptions: ['Paracétamol 1000mg - 3x/jour pendant 5 jours'],
-      sickLeave: {
-        startDate: '2024-11-01',
-        endDate: '2024-11-03',
-        reason: 'Grippe - contagieux',
-      },
-    },
-    {
-      id: '3',
-      recordNumber: 'MED-2024-003',
-      patientName: 'Robert Wilson',
-      patientId: 'PAT-003',
-      type: 'hospitalization',
-      diagnosis: 'Pneumonie sévère',
-      treatment: 'Antibiotiques IV, oxygène, surveillance 24/7',
-      doctor: 'Dr. Williams',
-      doctorId: 'SAMC-9012',
-      date: '2024-10-30T22:00:00',
-      location: 'Service pneumologie - SAMC Central',
-      status: 'ongoing',
-      priority: 'critical',
-      prescriptions: [
-        'Amoxicilline 1g IV - 3x/jour',
-        'Oxygène - selon besoin',
-      ],
-    },
-  ]);
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<MedicalRecord | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<MedicalRecordInsert>>({
+    patient_name: '',
+    patient_id: '',
+    type: 'consultation',
+    diagnosis: '',
+    treatment: '',
+    doctor: '',
+    doctor_id: '',
+    location: '',
+    status: 'ongoing',
+    priority: 'medium',
+    record_number: '',
+    date: '',
+  });
+
+  // Hook Supabase
+  const { records, isLoading, error, addRecord, updateRecord, deleteRecord } = useSupabaseMedicalRecords();
 
   const filteredRecords = records.filter((record) => {
     const matchesSearch =
-      record.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.recordNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.record_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.diagnosis.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || record.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || record.status === selectedStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  // Handlers
+  const handleCreate = () => {
+    setEditingRecord(null);
+    setFormData({
+      patient_name: '',
+      patient_id: '',
+      type: 'consultation',
+      diagnosis: '',
+      treatment: '',
+      doctor: '',
+      doctor_id: '',
+      location: '',
+      status: 'ongoing',
+      priority: 'medium',
+      record_number: '',
+      date: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (record: MedicalRecord) => {
+    setViewingRecord(record);
+  };
+
+  const handleEdit = (record: MedicalRecord) => {
+    setEditingRecord(record);
+    setFormData(record);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      const success = await deleteRecord(deletingId);
+      if (success) {
+        setShowDeleteConfirm(false);
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingRecord) {
+      await updateRecord(editingRecord.id, formData);
+    } else {
+      const recordData: MedicalRecordInsert = {
+        record_number: `MED-${new Date().getFullYear()}-${String(records.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString(),
+        ...formData as MedicalRecordInsert,
+      };
+      await addRecord(recordData);
+    }
+    setShowModal(false);
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -159,7 +161,7 @@ export default function MedicalRecordsPage() {
             <Download className="w-4 h-4" />
             Exporter
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={handleCreate}>
             <Plus className="w-4 h-4" />
             Nouvelle intervention
           </Button>
@@ -262,7 +264,7 @@ export default function MedicalRecordsPage() {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-white">
-                          {record.patientName}
+                          {record.patient_name}
                         </h3>
                         <Badge variant={typeConfig.color as any}>
                           {typeConfig.label}
@@ -275,9 +277,9 @@ export default function MedicalRecordsPage() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                        <span>{record.recordNumber}</span>
+                        <span>{record.record_number}</span>
                         <span>•</span>
-                        <span>{record.patientId}</span>
+                        <span>{record.patient_id}</span>
                       </div>
                       <div className="space-y-2">
                         <div>
@@ -333,7 +335,7 @@ export default function MedicalRecordsPage() {
                       <div>
                         <p className="text-gray-400">Médecin</p>
                         <p className="text-white font-medium">
-                          {record.doctor} ({record.doctorId})
+                          {record.doctor} ({record.doctor_id})
                         </p>
                       </div>
                       <div>
@@ -352,14 +354,26 @@ export default function MedicalRecordsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 ml-4">
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleView(record)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Voir les détails"
+                  >
                     <Eye className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleEdit(record)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Modifier"
+                  >
                     <Edit className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-                    <Download className="w-4 h-4 text-gray-400" />
+                  <button
+                    onClick={() => handleDelete(record.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-error-500" />
                   </button>
                 </div>
               </div>
@@ -374,6 +388,349 @@ export default function MedicalRecordsPage() {
           </Card>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">
+                {editingRecord ? 'Modifier le dossier' : 'Nouveau dossier médical'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nom du patient
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.patient_name || ''}
+                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Patient
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.patient_id || ''}
+                    onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type d'intervention
+                  </label>
+                  <select
+                    value={formData.type || 'consultation'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  >
+                    <option value="emergency">Urgence</option>
+                    <option value="hospitalization">Hospitalisation</option>
+                    <option value="consultation">Consultation</option>
+                    <option value="checkup">Visite</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status || 'ongoing'}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  >
+                    <option value="ongoing">En cours</option>
+                    <option value="completed">Terminé</option>
+                    <option value="follow_up_required">Suivi requis</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Priorité
+                  </label>
+                  <select
+                    value={formData.priority || 'medium'}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  >
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                    <option value="critical">Critique</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Diagnostic
+                </label>
+                <textarea
+                  value={formData.diagnosis || ''}
+                  onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Traitement
+                </label>
+                <textarea
+                  value={formData.treatment || ''}
+                  onChange={(e) => setFormData({ ...formData, treatment: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Médecin
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.doctor || ''}
+                    onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ID Médecin (SAMC)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.doctor_id || ''}
+                    onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Lieu
+                </label>
+                <input
+                  type="text"
+                  value={formData.location || ''}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingRecord ? 'Modifier' : 'Créer'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewingRecord && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-3xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Détails du dossier médical</h2>
+              <button
+                onClick={() => setViewingRecord(null)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Header with badges */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {viewingRecord.patientName}
+                  </h3>
+                  <Badge variant={recordTypeLabels[viewingRecord.type].color as any}>
+                    {recordTypeLabels[viewingRecord.type].label}
+                  </Badge>
+                  <Badge variant={statusLabels[viewingRecord.status].color as any}>
+                    {statusLabels[viewingRecord.status].label}
+                  </Badge>
+                  <Badge variant={priorityLabels[viewingRecord.priority].color as any}>
+                    {priorityLabels[viewingRecord.priority].label}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>{viewingRecord.recordNumber}</span>
+                  <span>•</span>
+                  <span>{viewingRecord.patientId}</span>
+                </div>
+              </div>
+
+              {/* Main information */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Diagnostic</p>
+                  <p className="text-white font-medium">{viewingRecord.diagnosis}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Traitement</p>
+                  <p className="text-white font-medium">{viewingRecord.treatment}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Médecin</p>
+                  <p className="text-white font-medium">
+                    {viewingRecord.doctor} ({viewingRecord.doctorId})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Date</p>
+                  <p className="text-white font-medium">
+                    {new Date(viewingRecord.date).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-400 mb-1">Lieu</p>
+                  <p className="text-white font-medium">{viewingRecord.location}</p>
+                </div>
+              </div>
+
+              {/* Prescriptions */}
+              {viewingRecord.prescriptions && viewingRecord.prescriptions.length > 0 && (
+                <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Pill className="w-5 h-5 text-error-500" />
+                    <p className="font-semibold text-white">Prescriptions</p>
+                  </div>
+                  <ul className="space-y-2">
+                    {viewingRecord.prescriptions.map((prescription, idx) => (
+                      <li key={idx} className="text-gray-300 ml-7">
+                        • {prescription}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Sick Leave */}
+              {viewingRecord.sickLeave && (
+                <div className="bg-warning-500/10 border border-warning-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-5 h-5 text-warning-500" />
+                    <p className="font-semibold text-white">Arrêt de travail</p>
+                  </div>
+                  <p className="text-gray-300 mb-2">
+                    Du {new Date(viewingRecord.sickLeave.startDate).toLocaleDateString('fr-FR')}{' '}
+                    au {new Date(viewingRecord.sickLeave.endDate).toLocaleDateString('fr-FR')}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Motif: {viewingRecord.sickLeave.reason}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setViewingRecord(null);
+                  handleEdit(viewingRecord);
+                }}
+                className="flex-1"
+              >
+                Modifier
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setViewingRecord(null)}
+                className="flex-1"
+              >
+                Fermer
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-error-500/10 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-error-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Confirmer la suppression</h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  Cette action est irréversible
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Êtes-vous sûr de vouloir supprimer ce dossier médical ? Toutes les informations
+              associées seront définitivement perdues.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="danger" onClick={confirmDelete} className="flex-1">
+                Supprimer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingId(null);
+                }}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

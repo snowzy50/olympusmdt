@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
@@ -17,27 +17,13 @@ import {
   X,
   AlertTriangle,
 } from 'lucide-react';
+import { useSupabaseSeizures } from '@/hooks/useSupabaseSeizures';
+import type { Seizure, SeizureInsert } from '@/lib/supabase/client';
 
 /**
  * Module de gestion des saisies
  * Créé par Snowzy
  */
-
-interface Seizure {
-  id: string;
-  seizureNumber: string;
-  type: 'weapons' | 'drugs' | 'vehicle' | 'goods';
-  description: string;
-  quantity: number;
-  unit: string;
-  estimatedValue: number;
-  seizedBy: string;
-  officerId: string;
-  location: string;
-  date: string;
-  status: 'stored' | 'evidence' | 'destroyed' | 'returned';
-  caseNumber?: string;
-}
 
 const seizureTypeLabels: Record<string, { label: string; icon: any; color: string }> = {
   weapons: { label: 'Armes', icon: ShieldAlert, color: 'error' },
@@ -67,74 +53,27 @@ export default function SeizuresPage() {
     description: '',
     quantity: 1,
     unit: '',
-    estimatedValue: 0,
-    seizedBy: '',
-    officerId: '',
+    estimated_value: 0,
+    seized_by: '',
+    officer_id: '',
     location: '',
     status: 'stored',
-    caseNumber: '',
+    case_number: '',
   });
 
-  // Données de démonstration
-  const [seizures, setSeizures] = useState<Seizure[]>([
-    {
-      id: '1',
-      seizureNumber: 'SEZ-2024-001',
-      type: 'weapons',
-      description: 'Pistolet 9mm avec chargeur',
-      quantity: 1,
-      unit: 'unité',
-      estimatedValue: 800,
-      seizedBy: 'Agent Smith',
-      officerId: 'SASP-1234',
-      location: 'Grove Street',
-      date: '2024-11-02T18:30:00',
-      status: 'evidence',
-      caseNumber: 'CASE-2024-156',
-    },
-    {
-      id: '2',
-      seizureNumber: 'SEZ-2024-002',
-      type: 'drugs',
-      description: 'Cocaïne en sachet',
-      quantity: 250,
-      unit: 'grammes',
-      estimatedValue: 15000,
-      seizedBy: 'Sergent Johnson',
-      officerId: 'SASP-5678',
-      location: 'Vinewood Boulevard',
-      date: '2024-11-01T22:45:00',
-      status: 'stored',
-      caseNumber: 'CASE-2024-157',
-    },
-    {
-      id: '3',
-      seizureNumber: 'SEZ-2024-003',
-      type: 'vehicle',
-      description: 'BMW M4 volée',
-      quantity: 1,
-      unit: 'véhicule',
-      estimatedValue: 45000,
-      seizedBy: 'Agent Williams',
-      officerId: 'SASP-9012',
-      location: 'Legion Square',
-      date: '2024-11-01T14:20:00',
-      status: 'evidence',
-      caseNumber: 'CASE-2024-158',
-    },
-  ]);
+  const { seizures, isLoading, error, addSeizure, updateSeizure, deleteSeizure } = useSupabaseSeizures();
 
   const filteredSeizures = seizures.filter((seizure) => {
     const matchesSearch =
       seizure.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      seizure.seizureNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      seizure.seizedBy.toLowerCase().includes(searchTerm.toLowerCase());
+      seizure.seizure_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      seizure.seized_by.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === 'all' || seizure.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || seizure.status === selectedStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const totalValue = filteredSeizures.reduce((sum, s) => sum + s.estimatedValue, 0);
+  const totalValue = filteredSeizures.reduce((sum, s) => sum + s.estimated_value, 0);
 
   // Handlers
   const handleCreate = () => {
@@ -144,12 +83,12 @@ export default function SeizuresPage() {
       description: '',
       quantity: 1,
       unit: '',
-      estimatedValue: 0,
-      seizedBy: '',
-      officerId: '',
+      estimated_value: 0,
+      seized_by: '',
+      officer_id: '',
       location: '',
       status: 'stored',
-      caseNumber: '',
+      case_number: '',
     });
     setShowModal(true);
   };
@@ -169,30 +108,25 @@ export default function SeizuresPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      setSeizures(seizures.filter((s) => s.id !== deletingId));
+      await deleteSeizure(deletingId);
       setShowDeleteConfirm(false);
       setDeletingId(null);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingSeizure) {
-      setSeizures(
-        seizures.map((s) =>
-          s.id === editingSeizure.id ? { ...s, ...formData } as Seizure : s
-        )
-      );
+      await updateSeizure(editingSeizure.id, formData);
     } else {
-      const newSeizure: Seizure = {
-        id: Date.now().toString(),
-        seizureNumber: `SEZ-${new Date().getFullYear()}-${String(seizures.length + 1).padStart(3, '0')}`,
+      const seizureData: SeizureInsert = {
+        ...formData as SeizureInsert,
+        seizure_number: `SEZ-${new Date().getFullYear()}-${String(seizures.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString(),
-        ...formData as Seizure,
       };
-      setSeizures([...seizures, newSeizure]);
+      await addSeizure(seizureData);
     }
     setShowModal(false);
   };
@@ -337,11 +271,11 @@ export default function SeizuresPage() {
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-primary-500" />
                         <span className="text-white font-medium">
-                          {seizure.seizureNumber}
+                          {seizure.seizure_number}
                         </span>
                       </div>
-                      {seizure.caseNumber && (
-                        <p className="text-xs text-gray-400 ml-6">{seizure.caseNumber}</p>
+                      {seizure.case_number && (
+                        <p className="text-xs text-gray-400 ml-6">{seizure.case_number}</p>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -361,13 +295,13 @@ export default function SeizuresPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-success-500 font-semibold">
-                        ${seizure.estimatedValue.toLocaleString()}
+                        ${seizure.estimated_value.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-white">{seizure.seizedBy}</p>
-                        <p className="text-sm text-gray-400">{seizure.officerId}</p>
+                        <p className="text-white">{seizure.seized_by}</p>
+                        <p className="text-sm text-gray-400">{seizure.officer_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -497,8 +431,8 @@ export default function SeizuresPage() {
                 <input
                   type="number"
                   min="0"
-                  value={formData.estimatedValue}
-                  onChange={(e) => setFormData({ ...formData, estimatedValue: parseInt(e.target.value) })}
+                  value={formData.estimated_value}
+                  onChange={(e) => setFormData({ ...formData, estimated_value: parseInt(e.target.value) })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   required
                 />
@@ -511,8 +445,8 @@ export default function SeizuresPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.seizedBy}
-                    onChange={(e) => setFormData({ ...formData, seizedBy: e.target.value })}
+                    value={formData.seized_by}
+                    onChange={(e) => setFormData({ ...formData, seized_by: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -523,8 +457,8 @@ export default function SeizuresPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.officerId}
-                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    value={formData.officer_id}
+                    onChange={(e) => setFormData({ ...formData, officer_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
@@ -567,8 +501,8 @@ export default function SeizuresPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.caseNumber}
-                    onChange={(e) => setFormData({ ...formData, caseNumber: e.target.value })}
+                    value={formData.case_number}
+                    onChange={(e) => setFormData({ ...formData, case_number: e.target.value })}
                     placeholder="Optionnel"
                     className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
@@ -620,12 +554,12 @@ export default function SeizuresPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-gray-400">Numéro de saisie</p>
-                  <p className="text-lg font-medium text-white">{viewingSeizure.seizureNumber}</p>
+                  <p className="text-lg font-medium text-white">{viewingSeizure.seizure_number}</p>
                 </div>
-                {viewingSeizure.caseNumber && (
+                {viewingSeizure.case_number && (
                   <div>
                     <p className="text-sm text-gray-400">Numéro de dossier</p>
-                    <p className="text-lg font-medium text-white">{viewingSeizure.caseNumber}</p>
+                    <p className="text-lg font-medium text-white">{viewingSeizure.case_number}</p>
                   </div>
                 )}
                 <div>
@@ -647,13 +581,13 @@ export default function SeizuresPage() {
                 <div>
                   <p className="text-sm text-gray-400">Valeur estimée</p>
                   <p className="text-lg font-medium text-success-500">
-                    ${viewingSeizure.estimatedValue.toLocaleString()}
+                    ${viewingSeizure.estimated_value.toLocaleString()}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Agent saisissant</p>
                   <p className="text-lg font-medium text-white">
-                    {viewingSeizure.seizedBy} ({viewingSeizure.officerId})
+                    {viewingSeizure.seized_by} ({viewingSeizure.officer_id})
                   </p>
                 </div>
               </div>
