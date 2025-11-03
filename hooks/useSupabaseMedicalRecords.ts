@@ -29,6 +29,7 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
 
   const fetchRecords = useCallback(async () => {
     try {
+      console.log('🔍 [Medical Records] Fetching...');
       setIsLoading(true);
       setError(null);
 
@@ -45,9 +46,10 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
         .order('date', { ascending: false });
 
       if (fetchError) throw fetchError;
+      console.log(`✅ [Medical Records] Fetched ${data?.length || 0} items`);
       setRecords(data || []);
     } catch (err) {
-      console.error('Error fetching medical records:', err);
+      console.error('❌ [Medical Records] Error:', err);
       setError(err as Error);
     } finally {
       setIsLoading(false);
@@ -55,6 +57,7 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
   }, [isSupabaseConfigured]);
 
   useEffect(() => {
+    console.log('🚀 [Medical Records] Initializing...');
     fetchRecords();
   }, [fetchRecords]);
 
@@ -62,34 +65,43 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
     if (!isSupabaseConfigured) return;
 
     const channel = supabase
-      .channel('medical_records')
-      .on<MedicalRecord>('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medical_records' },
-        (payload: RealtimePostgresChangesPayload<MedicalRecord>) => {
-          setRecords((current) => [payload.new as MedicalRecord, ...current]);
-        })
-      .on<MedicalRecord>('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'medical_records' },
-        (payload: RealtimePostgresChangesPayload<MedicalRecord>) => {
-          const updated = payload.new as MedicalRecord;
-          setRecords((current) => current.map((r) => r.id === updated.id ? updated : r));
-        })
-      .on<MedicalRecord>('postgres_changes', { event: 'DELETE', schema: 'public', table: 'medical_records' },
-        (payload: RealtimePostgresChangesPayload<MedicalRecord>) => {
-          const deleted = payload.old as MedicalRecord;
-          setRecords((current) => current.filter((r) => r.id !== deleted.id));
-        })
+      .channel('medical-records-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'medical_records' }, (payload) => {
+        console.log('📨 [Medical Records] Realtime:', payload);
+        if (payload.eventType === 'INSERT') {
+          setRecords((current) => {
+            if (current.some((r) => r.id === payload.new.id)) return current;
+            return [payload.new as MedicalRecord, ...current];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setRecords((current) =>
+            current.map((record) => (record.id === payload.new.id ? (payload.new as MedicalRecord) : record))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          setRecords((current) => current.filter((record) => record.id !== payload.old.id));
+        }
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      console.log('🔌 [Medical Records] Cleaning up...');
+      supabase.removeChannel(channel);
+    };
   }, [isSupabaseConfigured]);
 
   const addRecord = useCallback(async (data: MedicalRecordInsert): Promise<MedicalRecord | null> => {
     try {
+      console.log('🔵 [Medical Records] Adding:', data);
       const { data: result, error: insertError } = await supabase
         .from('medical_records').insert(data).select().single();
       if (insertError) throw insertError;
+      if (result) {
+        console.log('✅ [Medical Records] Added:', result);
+        setRecords((current) => [result, ...current]);
+      }
       return result;
     } catch (err) {
-      console.error('Error adding medical record:', err);
+      console.error('❌ [Medical Records] Error adding:', err);
       setError(err as Error);
       return null;
     }
@@ -97,12 +109,17 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
 
   const updateRecord = useCallback(async (id: string, updates: MedicalRecordUpdate): Promise<MedicalRecord | null> => {
     try {
+      console.log('🔵 [Medical Records] Updating:', { id, updates });
       const { data, error: updateError } = await supabase
         .from('medical_records').update(updates).eq('id', id).select().single();
       if (updateError) throw updateError;
+      if (data) {
+        console.log('✅ [Medical Records] Updated:', data);
+        setRecords((current) => current.map((record) => (record.id === data.id ? data : record)));
+      }
       return data;
     } catch (err) {
-      console.error('Error updating medical record:', err);
+      console.error('❌ [Medical Records] Error updating:', err);
       setError(err as Error);
       return null;
     }
@@ -110,12 +127,15 @@ export function useSupabaseMedicalRecords(): UseSupabaseMedicalRecordsReturn {
 
   const deleteRecord = useCallback(async (id: string): Promise<boolean> => {
     try {
+      console.log('🔵 [Medical Records] Deleting:', id);
       const { error: deleteError } = await supabase
         .from('medical_records').delete().eq('id', id);
       if (deleteError) throw deleteError;
+      console.log('✅ [Medical Records] Deleted:', id);
+      setRecords((current) => current.filter((record) => record.id !== id));
       return true;
     } catch (err) {
-      console.error('Error deleting medical record:', err);
+      console.error('❌ [Medical Records] Error deleting:', err);
       setError(err as Error);
       return false;
     }

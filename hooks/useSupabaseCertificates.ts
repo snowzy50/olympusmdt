@@ -29,6 +29,7 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
 
   const fetchCertificates = useCallback(async () => {
     try {
+      console.log('🔍 [Certificates] Fetching...');
       setIsLoading(true);
       setError(null);
 
@@ -45,9 +46,10 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
         .order('date', { ascending: false });
 
       if (fetchError) throw fetchError;
+      console.log(`✅ [Certificates] Fetched ${data?.length || 0} items`);
       setCertificates(data || []);
     } catch (err) {
-      console.error('Error fetching certificates:', err);
+      console.error('❌ [Certificates] Error:', err);
       setError(err as Error);
     } finally {
       setIsLoading(false);
@@ -55,6 +57,7 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
   }, [isSupabaseConfigured]);
 
   useEffect(() => {
+    console.log('🚀 [Certificates] Initializing...');
     fetchCertificates();
   }, [fetchCertificates]);
 
@@ -62,34 +65,43 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
     if (!isSupabaseConfigured) return;
 
     const channel = supabase
-      .channel('certificates')
-      .on<Certificate>('postgres_changes', { event: 'INSERT', schema: 'public', table: 'certificates' },
-        (payload: RealtimePostgresChangesPayload<Certificate>) => {
-          setCertificates((current) => [payload.new as Certificate, ...current]);
-        })
-      .on<Certificate>('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'certificates' },
-        (payload: RealtimePostgresChangesPayload<Certificate>) => {
-          const updated = payload.new as Certificate;
-          setCertificates((current) => current.map((c) => c.id === updated.id ? updated : c));
-        })
-      .on<Certificate>('postgres_changes', { event: 'DELETE', schema: 'public', table: 'certificates' },
-        (payload: RealtimePostgresChangesPayload<Certificate>) => {
-          const deleted = payload.old as Certificate;
-          setCertificates((current) => current.filter((c) => c.id !== deleted.id));
-        })
+      .channel('certificates-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'certificates' }, (payload) => {
+        console.log('📨 [Certificates] Realtime:', payload);
+        if (payload.eventType === 'INSERT') {
+          setCertificates((current) => {
+            if (current.some((c) => c.id === payload.new.id)) return current;
+            return [payload.new as Certificate, ...current];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setCertificates((current) =>
+            current.map((cert) => (cert.id === payload.new.id ? (payload.new as Certificate) : cert))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          setCertificates((current) => current.filter((cert) => cert.id !== payload.old.id));
+        }
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      console.log('🔌 [Certificates] Cleaning up...');
+      supabase.removeChannel(channel);
+    };
   }, [isSupabaseConfigured]);
 
   const addCertificate = useCallback(async (data: CertificateInsert): Promise<Certificate | null> => {
     try {
+      console.log('🔵 [Certificates] Adding:', data);
       const { data: result, error: insertError } = await supabase
         .from('certificates').insert(data).select().single();
       if (insertError) throw insertError;
+      if (result) {
+        console.log('✅ [Certificates] Added:', result);
+        setCertificates((current) => [result, ...current]);
+      }
       return result;
     } catch (err) {
-      console.error('Error adding certificate:', err);
+      console.error('❌ [Certificates] Error adding:', err);
       setError(err as Error);
       return null;
     }
@@ -97,12 +109,17 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
 
   const updateCertificate = useCallback(async (id: string, updates: CertificateUpdate): Promise<Certificate | null> => {
     try {
+      console.log('🔵 [Certificates] Updating:', { id, updates });
       const { data, error: updateError } = await supabase
         .from('certificates').update(updates).eq('id', id).select().single();
       if (updateError) throw updateError;
+      if (data) {
+        console.log('✅ [Certificates] Updated:', data);
+        setCertificates((current) => current.map((cert) => (cert.id === data.id ? data : cert)));
+      }
       return data;
     } catch (err) {
-      console.error('Error updating certificate:', err);
+      console.error('❌ [Certificates] Error updating:', err);
       setError(err as Error);
       return null;
     }
@@ -110,12 +127,15 @@ export function useSupabaseCertificates(): UseSupabaseCertificatesReturn {
 
   const deleteCertificate = useCallback(async (id: string): Promise<boolean> => {
     try {
+      console.log('🔵 [Certificates] Deleting:', id);
       const { error: deleteError } = await supabase
         .from('certificates').delete().eq('id', id);
       if (deleteError) throw deleteError;
+      console.log('✅ [Certificates] Deleted:', id);
+      setCertificates((current) => current.filter((cert) => cert.id !== id));
       return true;
     } catch (err) {
-      console.error('Error deleting certificate:', err);
+      console.error('❌ [Certificates] Error deleting:', err);
       setError(err as Error);
       return false;
     }
