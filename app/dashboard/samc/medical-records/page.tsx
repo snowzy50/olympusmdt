@@ -69,8 +69,6 @@ export default function MedicalRecordsPage() {
     location: '',
     status: 'ongoing',
     priority: 'medium',
-    record_number: '',
-    date: '',
   });
 
   // Hook Supabase
@@ -100,8 +98,6 @@ export default function MedicalRecordsPage() {
       location: '',
       status: 'ongoing',
       priority: 'medium',
-      record_number: '',
-      date: '',
     });
     setShowModal(true);
   };
@@ -137,9 +133,9 @@ export default function MedicalRecordsPage() {
       await updateRecord(editingRecord.id, formData);
     } else {
       const recordData: MedicalRecordInsert = {
+        ...formData as MedicalRecordInsert,
         record_number: `MED-${new Date().getFullYear()}-${String(records.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString(),
-        ...formData as MedicalRecordInsert,
       };
       await addRecord(recordData);
     }
