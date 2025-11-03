@@ -55,7 +55,6 @@ const mainNavItems: NavItem[] = [
 const patrolSection: NavItem[] = [
   { name: 'Dispatch', icon: Radio, href: '/dashboard/dispatch', badge: null },
   { name: 'Organisations', icon: Shield, href: '/dashboard/organizations', badge: null },
-  { name: 'Mes dossiers en cours', icon: FolderOpen, href: '/dashboard/active-cases', badge: '3' },
 ];
 
 // Section Dossiers
