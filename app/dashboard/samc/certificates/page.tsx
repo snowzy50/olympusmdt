@@ -59,7 +59,6 @@ export default function CertificatesPage() {
     status: 'valid',
     description: '',
     certificate_number: '',
-    date: '',
   });
 
   // Hook Supabase
@@ -87,7 +86,6 @@ export default function CertificatesPage() {
       status: 'valid',
       description: '',
       certificate_number: '',
-      date: '',
     });
     setShowModal(true);
   };
@@ -126,9 +124,9 @@ export default function CertificatesPage() {
                          formData.type === 'death' ? 'DEATH' :
                          formData.type === 'ppa' ? 'PPA' : 'INC';
       const certData: CertificateInsert = {
+        ...formData as CertificateInsert,
         certificate_number: `CERT-${typePrefix}-${new Date().getFullYear()}-${String(certificates.length + 1).padStart(3, '0')}`,
         date: new Date().toISOString(),
-        ...formData as CertificateInsert,
       };
       await addCertificate(certData);
     }
@@ -264,7 +262,7 @@ export default function CertificatesPage() {
                       <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
                         <span>{cert.certificate_number}</span>
                         <span>•</span>
-                        <span>{cert.patientId}</span>
+                        <span>{cert.patient_id}</span>
                       </div>
                       <p className="text-gray-300 mb-3">{cert.description}</p>
                     </div>
@@ -286,7 +284,7 @@ export default function CertificatesPage() {
                       <div>
                         <p className="text-gray-400">Émis par</p>
                         <p className="text-white font-medium">
-                          {cert.issued_by} ({cert.doctorId})
+                          {cert.issued_by} ({cert.doctor_id})
                         </p>
                       </div>
                       <div>
@@ -417,7 +415,7 @@ export default function CertificatesPage() {
                   <input
                     type="text"
                     value={formData.patient_name || ''}
-                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -430,7 +428,7 @@ export default function CertificatesPage() {
                   <input
                     type="text"
                     value={formData.patient_id || ''}
-                    onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, patient_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -458,7 +456,7 @@ export default function CertificatesPage() {
                   <input
                     type="text"
                     value={formData.issued_by || ''}
-                    onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, issued_by: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -471,7 +469,7 @@ export default function CertificatesPage() {
                   <input
                     type="text"
                     value={formData.doctor_id || ''}
-                    onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, doctor_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -527,7 +525,7 @@ export default function CertificatesPage() {
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <h3 className="text-2xl font-bold text-white">
-                    {viewingCertificate.patientName}
+                    {viewingCertificate.patient_name}
                   </h3>
                   <Badge variant={certificateTypeLabels[viewingCertificate.type].color as any}>
                     {certificateTypeLabels[viewingCertificate.type].label}
@@ -539,7 +537,7 @@ export default function CertificatesPage() {
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <span>{viewingCertificate.certificateNumber}</span>
                   <span>•</span>
-                  <span>{viewingCertificate.patientId}</span>
+                  <span>{viewingCertificate.patient_id}</span>
                 </div>
               </div>
 
@@ -554,7 +552,7 @@ export default function CertificatesPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Émis par</p>
                   <p className="text-white font-medium">
-                    {viewingCertificate.issuedBy} ({viewingCertificate.doctorId})
+                    {viewingCertificate.issued_by} ({viewingCertificate.doctor_id})
                   </p>
                 </div>
                 <div>
