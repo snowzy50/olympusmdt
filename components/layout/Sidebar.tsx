@@ -94,7 +94,6 @@ const samcModules: NavItem[] = [
   { name: 'Certificats de décès', icon: AlertTriangle, href: '/dashboard/death-certificates', badge: null },
   { name: 'Rapports d\'incident', icon: AlertTriangle, href: '/dashboard/incident-reports', badge: null },
   { name: 'Actes médicaux', icon: Activity, href: '/dashboard/medical-acts', badge: null },
-  { name: 'Planning des gardes', icon: Calendar, href: '/dashboard/on-duty-schedule', badge: null },
 ];
 
 // Nouveaux modules Dynasty8
