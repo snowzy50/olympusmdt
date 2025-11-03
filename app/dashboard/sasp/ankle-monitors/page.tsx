@@ -14,6 +14,8 @@ import {
   Eye,
   Edit,
   Activity,
+  X,
+  Trash2,
 } from 'lucide-react';
 
 /**
@@ -47,9 +49,25 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
 export default function AnkleMonitorsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingMonitor, setEditingMonitor] = useState<AnkleMonitor | null>(null);
+  const [viewingMonitor, setViewingMonitor] = useState<AnkleMonitor | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<AnkleMonitor>>({
+    citizenName: '',
+    citizenId: '',
+    deviceId: '',
+    status: 'active',
+    assignedOfficer: '',
+    officerId: '',
+    lastLocation: '',
+    batteryLevel: 100,
+    violations: 0,
+  });
 
   // Données de démonstration
-  const [monitors] = useState<AnkleMonitor[]>([
+  const [monitors, setMonitors] = useState<AnkleMonitor[]>([
     {
       id: '1',
       monitorNumber: 'AM-2024-001',
@@ -109,6 +127,66 @@ export default function AnkleMonitorsPage() {
     return 'text-error-500';
   };
 
+  // Handlers
+  const handleCreate = () => {
+    setEditingMonitor(null);
+    setFormData({
+      citizenName: '',
+      citizenId: '',
+      deviceId: '',
+      status: 'active',
+      assignedOfficer: '',
+      officerId: '',
+      lastLocation: '',
+      batteryLevel: 100,
+      violations: 0,
+    });
+    setShowModal(true);
+  };
+
+  const handleView = (monitor: AnkleMonitor) => {
+    setViewingMonitor(monitor);
+  };
+
+  const handleEdit = (monitor: AnkleMonitor) => {
+    setEditingMonitor(monitor);
+    setFormData(monitor);
+    setShowModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      setMonitors(monitors.filter((m) => m.id !== deletingId));
+      setShowDeleteConfirm(false);
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingMonitor) {
+      setMonitors(
+        monitors.map((m) =>
+          m.id === editingMonitor.id ? { ...m, ...formData } as AnkleMonitor : m
+        )
+      );
+    } else {
+      const newMonitor: AnkleMonitor = {
+        id: Date.now().toString(),
+        monitorNumber: `AM-${new Date().getFullYear()}-${String(monitors.length + 1).padStart(3, '0')}`,
+        installDate: new Date().toISOString(),
+        ...formData as AnkleMonitor,
+      };
+      setMonitors([...monitors, newMonitor]);
+    }
+    setShowModal(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -119,7 +197,7 @@ export default function AnkleMonitorsPage() {
             Surveillance et gestion des bracelets de surveillance électronique
           </p>
         </div>
-        <Button variant="primary" className="gap-2">
+        <Button variant="primary" className="gap-2" onClick={handleCreate}>
           <Plus className="w-4 h-4" />
           Nouveau bracelet
         </Button>
@@ -305,11 +383,26 @@ export default function AnkleMonitorsPage() {
                     <MapPin className="w-4 h-4" />
                     Localiser
                   </Button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleView(monitor)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Voir les détails"
+                  >
                     <Eye className="w-4 h-4 text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button
+                    onClick={() => handleEdit(monitor)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Modifier"
+                  >
                     <Edit className="w-4 h-4 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(monitor.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-error-500" />
                   </button>
                 </div>
               </div>
@@ -324,6 +417,251 @@ export default function AnkleMonitorsPage() {
           </Card>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <div className="bg-dark-200 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">
+                {editingMonitor ? 'Modifier le bracelet' : 'Nouveau bracelet'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Nom du citoyen *</label>
+                  <input
+                    type="text"
+                    value={formData.citizenName}
+                    onChange={(e) => setFormData({ ...formData, citizenName: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">ID Citoyen *</label>
+                  <input
+                    type="text"
+                    value={formData.citizenId}
+                    onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">ID Appareil *</label>
+                <input
+                  type="text"
+                  value={formData.deviceId}
+                  onChange={(e) => setFormData({ ...formData, deviceId: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Agent responsable *</label>
+                  <input
+                    type="text"
+                    value={formData.assignedOfficer}
+                    onChange={(e) => setFormData({ ...formData, assignedOfficer: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Matricule *</label>
+                  <input
+                    type="text"
+                    value={formData.officerId}
+                    onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Statut *</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as AnkleMonitor['status'] })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                    <option value="violation">Violation</option>
+                    <option value="low_battery">Batterie faible</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Niveau batterie (%) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.batteryLevel}
+                    onChange={(e) => setFormData({ ...formData, batteryLevel: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Dernière position</label>
+                <input
+                  type="text"
+                  value={formData.lastLocation}
+                  onChange={(e) => setFormData({ ...formData, lastLocation: e.target.value })}
+                  className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" variant="primary" className="flex-1">
+                  {editingMonitor ? 'Mettre à jour' : 'Créer le bracelet'}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="flex-1">
+                  Annuler
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingMonitor && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <div className="bg-dark-200 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Détails du bracelet</h2>
+              <button onClick={() => setViewingMonitor(null)} className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-bold text-white">{viewingMonitor.citizenName}</h3>
+                <Badge variant={statusLabels[viewingMonitor.status].color as any}>
+                  {statusLabels[viewingMonitor.status].label}
+                </Badge>
+                {viewingMonitor.violations > 0 && (
+                  <Badge variant="error">{viewingMonitor.violations} violations</Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400">Numéro bracelet</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.monitorNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">ID Appareil</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.deviceId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">ID Citoyen</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.citizenId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Date d'installation</p>
+                  <p className="text-lg font-medium text-white">
+                    {new Date(viewingMonitor.installDate).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Agent responsable</p>
+                  <p className="text-lg font-medium text-white">
+                    {viewingMonitor.assignedOfficer} ({viewingMonitor.officerId})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Dernière position</p>
+                  <p className="text-lg font-medium text-white">{viewingMonitor.lastLocation || 'Inconnue'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400 mb-2">Niveau de batterie</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 bg-gray-700 rounded-full h-3">
+                    <div
+                      className={`h-full rounded-full ${
+                        viewingMonitor.batteryLevel >= 50
+                          ? 'bg-success-500'
+                          : viewingMonitor.batteryLevel >= 20
+                          ? 'bg-warning-500'
+                          : 'bg-error-500'
+                      }`}
+                      style={{ width: `${viewingMonitor.batteryLevel}%` }}
+                    />
+                  </div>
+                  <p className={`text-xl font-bold ${getBatteryColor(viewingMonitor.batteryLevel)}`}>
+                    {viewingMonitor.batteryLevel}%
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setViewingMonitor(null);
+                    handleEdit(viewingMonitor);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </Button>
+                <Button variant="ghost" onClick={() => setViewingMonitor(null)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 py-8 overflow-y-auto">
+          <div className="bg-dark-200 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-error-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-error-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Confirmer la suppression</h3>
+                  <p className="text-sm text-gray-400">Cette action est irréversible</p>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-6">
+                Êtes-vous sûr de vouloir supprimer ce bracelet électronique ? Toutes les données seront définitivement perdues.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="destructive" onClick={confirmDelete} className="flex-1">
+                  Supprimer
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingId(null);
+                  }}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
