@@ -485,7 +485,7 @@ export default function CertificatesPage() {
                 <input
                   type="date"
                   value={formData.valid_until || ''}
-                  onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
                   className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                 />
               </div>
@@ -563,25 +563,25 @@ export default function CertificatesPage() {
                     {new Date(viewingCertificate.date).toLocaleString('fr-FR')}
                   </p>
                 </div>
-                {viewingCertificate.validUntil && (
+                {viewingCertificate.valid_until && (
                   <div>
                     <p className="text-sm text-gray-400 mb-1">Valide jusqu'au</p>
                     <p className="text-white font-medium">
-                      {new Date(viewingCertificate.validUntil).toLocaleDateString('fr-FR')}
+                      {new Date(viewingCertificate.valid_until).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                 )}
               </div>
 
               {/* Shared With */}
-              {viewingCertificate.sharedWith && viewingCertificate.sharedWith.length > 0 && (
+              {viewingCertificate.shared_with && viewingCertificate.shared_with.length > 0 && (
                 <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Share2 className="w-5 h-5 text-primary-500" />
                     <p className="font-semibold text-white">Partagé avec</p>
                   </div>
                   <p className="text-gray-300">
-                    {viewingCertificate.sharedWith.join(', ')}
+                    {viewingCertificate.shared_with.join(', ')}
                   </p>
                 </div>
               )}
