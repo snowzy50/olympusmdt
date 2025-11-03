@@ -1,0 +1,97 @@
+Le MDT doit intégrer plusieurs modules essentiels pour assurer un suivi complet des activités et des personnels.
+
+⸻ SASP
+
+🔹 1. Données administratives
+    •    Accès aux permis de conduire enregistrés.
+    •    Consultation des immatriculations des véhicules.
+
+⸻
+
+🔹 2. Rapports opérationnels
+    •    Rapports d’opération.
+    •    Rapports de fusillade.
+    •    Rapports d’arrestation.
+
+⸻
+
+🔹 3. Gestion judiciaire et disciplinaire
+    •    Section dédiée aux saisies (armes, stupéfiants, véhicules, biens divers).
+    •    Section pour les amendes et leur suivi.
+    •    Module pour les bracelets électroniques (pose, retrait, surveillance).
+
+⸻
+
+🔹 4. Mandats et procédures
+    •    Interface pour la gestion des mandats d’arrêt : création, suivi, archivage.
+
+⸻
+
+🔹 5. Gestion du personnel
+    •    Fiche complète pour chaque agent comprenant :
+    •    Nom, prénom, matricule, numéro de téléphone, grade.
+    •    Date d’embauche et historique des promotions.
+    •    Observations ou annotations internes si nécessaire.
+
+⸻
+
+🏥 Corps Médical – Cahier des Fonctions - SAMC
+
+Le module dédié au corps médical doit regrouper l’ensemble des éléments relatifs aux interventions, au suivi des patients et à la gestion administrative du personnel soignant.
+
+⸻
+
+1. Dossier médical et interventions
+    •    Enregistrement de toutes les interventions médicales (urgence, hospitalisation, visite, etc.).
+    •    Gestion des arrêts de travail, prescriptions médicales et certificats médicaux.
+    •    Création et archivage des certificats de décès.
+    •    Rédaction et conservation des rapports d’incident médical.
+
+⸻
+
+2. Administration médicale
+    •    Gestion complète des actes médicaux réalisés (type, date, praticien).
+    •    Base de données du personnel de santé : nom, fonction, spécialité, grade, heures de service, et disponibilité.
+    •    Module de planification et suivi des heures de garde.
+
+⸻
+
+3. Accès interservices
+
+Certaines sections doivent être accessibles conjointement au service médical et au service de police, notamment :
+    •    Les certificats médicaux officiels.
+    •    Les certificats liés au PPA (Port d’Arme), avec validation médicale et historique.
+
+⸻
+
+🏠 Agence Immobilière – Cahier des Fonctions - Dynasty 8
+
+Le module immobilier doit permettre une gestion intégrée du parc immobilier et du personnel de l’agence.
+
+⸻
+
+1. Gestion du parc immobilier
+    •    Carte interactive de la ville affichant chaque bien (maison, appartement, local).
+    •    Possibilité de créer un point pour chaque propriété directement sur la carte.
+    •    Onglet “Habitation” avec les informations suivantes :
+    •    Statut du bien : Disponible / Loué / Vendu.
+    •    En cas de location : possibilité d’indiquer le tarif hebdomadaire.
+
+⸻
+
+2. Administration et personnel
+    •    Espace de gestion interne contenant :
+    •    Liste de tous les agents immobiliers, leur grade, et leurs coordonnées.
+    •    Partie comptabilité (transactions, loyers, ventes, commissions).
+    •    Section “Maître” pour la supervision générale et la validation administrative.
+
+⸻
+
+
+
+3. Objectif global
+
+Garantir une interface claire, hiérarchisée et fonctionnelle, adaptée à la fois aux besoins médicaux, administratifs et opérationnels, tout en assurant la traçabilité et la sécurisation des données entre services.
+Objectif
+
+Garantir un MDT complet, centralisé et fonctionnel, permettant à tout supérieur hiérarchique ou service judiciaire d’avoir une traçabilité totale des actions, du matériel et des effectifs.

@@ -18,6 +18,7 @@ interface StatsCardProps {
   trend?: 'up' | 'down' | 'neutral';
   color?: 'blue' | 'red' | 'orange' | 'green' | 'purple' | 'yellow';
   delay?: number;
+  onClick?: () => void;
 }
 
 const colorConfig = {
@@ -67,25 +68,25 @@ export function StatsCard({
   trend = 'neutral',
   color = 'blue',
   delay = 0,
+  onClick,
 }: StatsCardProps) {
   const colors = colorConfig[color];
 
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className={`
-        relative overflow-hidden
-        bg-gradient-to-br ${colors.gradient}
-        backdrop-blur-sm border ${colors.border}
-        rounded-xl p-6
-        hover:shadow-lg hover:shadow-${color}-500/10
-        transition-all duration-300
-      `}
-    >
+  const className = `
+    relative overflow-hidden
+    bg-gradient-to-br ${colors.gradient}
+    backdrop-blur-sm border ${colors.border}
+    rounded-xl p-6
+    hover:shadow-lg hover:shadow-${color}-500/10
+    transition-all duration-300
+    ${onClick ? 'cursor-pointer hover:scale-105 active:scale-95' : ''}
+    w-full text-left
+  `;
+
+  const content = (
+    <>
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -119,6 +120,31 @@ export function StatsCard({
 
       {/* Shine Effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay }}
+        onClick={onClick}
+        className={className}
+      >
+        {content}
+      </motion.button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className={className}
+    >
+      {content}
     </motion.div>
   );
 }
