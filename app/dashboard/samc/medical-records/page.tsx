@@ -414,7 +414,7 @@ export default function MedicalRecordsPage() {
                   <input
                     type="text"
                     value={formData.patient_name || ''}
-                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, patient_name: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -427,7 +427,7 @@ export default function MedicalRecordsPage() {
                   <input
                     type="text"
                     value={formData.patient_id || ''}
-                    onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, patient_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -530,7 +530,7 @@ export default function MedicalRecordsPage() {
                   <input
                     type="text"
                     value={formData.doctor_id || ''}
-                    onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, doctor_id: e.target.value })}
                     className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-error-500"
                     required
                   />
@@ -587,7 +587,7 @@ export default function MedicalRecordsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <h3 className="text-2xl font-bold text-white">
-                    {viewingRecord.patientName}
+                    {viewingRecord.patient_name}
                   </h3>
                   <Badge variant={recordTypeLabels[viewingRecord.type].color as any}>
                     {recordTypeLabels[viewingRecord.type].label}
@@ -600,9 +600,9 @@ export default function MedicalRecordsPage() {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span>{viewingRecord.recordNumber}</span>
+                  <span>{viewingRecord.record_number}</span>
                   <span>•</span>
-                  <span>{viewingRecord.patientId}</span>
+                  <span>{viewingRecord.patient_id}</span>
                 </div>
               </div>
 
@@ -619,7 +619,7 @@ export default function MedicalRecordsPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Médecin</p>
                   <p className="text-white font-medium">
-                    {viewingRecord.doctor} ({viewingRecord.doctorId})
+                    {viewingRecord.doctor} ({viewingRecord.doctor_id})
                   </p>
                 </div>
                 <div>

@@ -17,7 +17,7 @@ const STATUS_OPTIONS: { value: DeathCertificateStatus; label: string; color: str
 ];
 
 export default function DeathCertificatesPage() {
-  const { deathCertificates, loading, error, addDeathCertificate, updateDeathCertificate, deleteDeathCertificate } = useSupabaseDeathCertificates();
+  const { deathCertificates, loading, error, createDeathCertificate, updateDeathCertificate, deleteDeathCertificate } = useSupabaseDeathCertificates();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<DeathCertificateStatus | 'all'>('all');
@@ -87,7 +87,7 @@ export default function DeathCertificatesPage() {
       date_of_death: formData.date_of_death || new Date().toISOString(),
     };
 
-    const result = await addDeathCertificate(certificateData);
+    const result = await createDeathCertificate(certificateData);
     if (result) {
       setShowCreateModal(false);
       resetForm();

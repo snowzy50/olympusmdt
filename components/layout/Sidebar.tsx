@@ -87,6 +87,14 @@ const saspModules: NavItem[] = [
 const samcModules: NavItem[] = [
   { name: 'Dossiers médicaux', icon: Stethoscope, href: '/dashboard/medical-records', badge: null },
   { name: 'Certificats', icon: FileText, href: '/dashboard/certificates', badge: null },
+  { name: 'Personnel médical', icon: Users, href: '/dashboard/medical-staff', badge: null },
+  { name: 'Prescriptions', icon: FileText, href: '/dashboard/prescriptions', badge: null },
+  { name: 'Certificats PPA', icon: Shield, href: '/dashboard/ppa-certificates', badge: null },
+  { name: 'Arrêts de travail', icon: Activity, href: '/dashboard/sick-leaves', badge: null },
+  { name: 'Certificats de décès', icon: AlertTriangle, href: '/dashboard/death-certificates', badge: null },
+  { name: 'Rapports d\'incident', icon: AlertTriangle, href: '/dashboard/incident-reports', badge: null },
+  { name: 'Actes médicaux', icon: Activity, href: '/dashboard/medical-acts', badge: null },
+  { name: 'Planning des gardes', icon: Calendar, href: '/dashboard/on-duty-schedule', badge: null },
 ];
 
 // Nouveaux modules Dynasty8
@@ -122,10 +130,20 @@ const Sidebar: React.FC = () => {
     return true;
   });
 
-  // Filtrer les éléments admin-only si l'utilisateur n'est pas admin
+  // Filtrer les éléments selon l'agence et les droits admin
   const filteredDossierSection = dossierSection.filter(item => {
+    // Pages admin uniquement
     const isAdminOnlyPage = item.href.includes('/logs') || item.href.includes('/cache-demo');
-    return !isAdminOnlyPage || isAdmin;
+    if (isAdminOnlyPage && !isAdmin) return false;
+
+    // Pour SAMC et SAFD, ne garder que les pages administratives génériques
+    if (currentAgency === 'samc' || currentAgency === 'safd') {
+      const allowedPages = ['/equipment', '/units', '/divisions', '/settings'];
+      return allowedPages.some(page => item.href.includes(page));
+    }
+
+    // Pour les autres agences, afficher toutes les pages (sauf admin-only si pas admin)
+    return true;
   });
 
   // Sélectionner les modules spécifiques à l'agence

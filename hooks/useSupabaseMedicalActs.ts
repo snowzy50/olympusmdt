@@ -121,5 +121,5 @@ export function useSupabaseMedicalActs() {
     };
   }, [fetchMedicalActs]);
 
-  return { medicalActs, loading, error, addMedicalAct, updateMedicalAct, deleteMedicalAct, refetch: fetchMedicalActs };
+  return { medicalActs, loading, error, createMedicalAct: addMedicalAct, updateMedicalAct, deleteMedicalAct, refetch: fetchMedicalActs };
 }

@@ -121,5 +121,5 @@ export function useSupabaseDeathCertificates() {
     };
   }, [fetchDeathCertificates]);
 
-  return { deathCertificates, loading, error, addDeathCertificate, updateDeathCertificate, deleteDeathCertificate, refetch: fetchDeathCertificates };
+  return { deathCertificates, loading, error, createDeathCertificate: addDeathCertificate, updateDeathCertificate, deleteDeathCertificate, refetch: fetchDeathCertificates };
 }

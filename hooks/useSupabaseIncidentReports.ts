@@ -121,5 +121,13 @@ export function useSupabaseIncidentReports() {
     };
   }, [fetchIncidentReports]);
 
-  return { incidentReports, loading, error, addIncidentReport, updateIncidentReport, deleteIncidentReport, refetch: fetchIncidentReports };
+  return {
+    incidentReports,
+    loading,
+    error,
+    createIncidentReport: addIncidentReport,
+    updateIncidentReport,
+    deleteIncidentReport,
+    refetch: fetchIncidentReports
+  };
 }
