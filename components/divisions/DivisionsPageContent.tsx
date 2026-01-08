@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Building,
   Search,
@@ -13,49 +13,33 @@ import {
   TrendingUp,
   CheckCircle,
   XCircle,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useDivisions } from '@/hooks/useDivisions';
+import type { Division } from '@/services/divisionsRealtimeService';
 
 interface DivisionsPageContentProps {
   agencyId: string;
   agencyName: string;
 }
 
-interface Division {
-  id: string;
-  name: string;
-  code: string;
-  chief: string;
-  members: number;
-  department: string;
-  status: 'active' | 'inactive' | 'restructuring';
-  notes?: string;
-}
-
-export function DivisionsPageContent({ agencyId, agencyName }: DivisionsPageContentProps) {
+export function DivisionsPageContent({ agencyId: propAgencyId, agencyName }: DivisionsPageContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [divisions, setDivisions] = useState<Division[]>([]);
+  const {
+    divisions,
+    isLoading,
+    error,
+    createDivision,
+    updateDivision,
+    deleteDivision
+  } = useDivisions(propAgencyId);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<Division | null>(null);
-
-  useEffect(() => {
-    const storageKey = `divisions_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setDivisions(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading divisions:', error);
-      }
-    }
-  }, [agencyId]);
-
-  useEffect(() => {
-    const storageKey = `divisions_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(divisions));
-  }, [divisions, agencyId]);
 
   const filteredDivisions = divisions.filter(division =>
     division.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,30 +50,45 @@ export function DivisionsPageContent({ agencyId, agencyName }: DivisionsPageCont
   const stats = {
     total: divisions.length,
     active: divisions.filter(d => d.status === 'active').length,
-    totalMembers: divisions.reduce((sum, d) => sum + d.members, 0),
+    totalMembers: divisions.reduce((sum, d) => sum + (d.members_count || 0), 0),
     avgPerformance: divisions.length > 0 ? Math.round((divisions.filter(d => d.status === 'active').length / divisions.length) * 100) : 0,
   };
 
-  const handleAddDivision = (newDivision: Omit<Division, 'id'>) => {
-    const division: Division = {
-      ...newDivision,
-      id: Date.now().toString(),
-    };
-    setDivisions([...divisions, division]);
-    setShowAddModal(false);
+  const handleAddDivision = async (newDivision: Omit<Division, 'id' | 'agency_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      await createDivision({
+        ...newDivision,
+        agency_id: propAgencyId
+      });
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Error creating division:', err);
+      alert('Erreur lors de la création de la division');
+    }
   };
 
-  const handleEditDivision = (updatedDivision: Division) => {
-    setDivisions(divisions.map(d => d.id === updatedDivision.id ? updatedDivision : d));
-    setShowEditModal(false);
-    setSelectedDivision(null);
-  };
-
-  const handleDeleteDivision = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette division ?')) {
-      setDivisions(divisions.filter(d => d.id !== id));
-      setShowViewModal(false);
+  const handleEditDivision = async (updatedDivision: Division) => {
+    try {
+      const { id, created_at, updated_at, ...updates } = updatedDivision;
+      await updateDivision(id, updates);
+      setShowEditModal(false);
       setSelectedDivision(null);
+    } catch (err) {
+      console.error('Error updating division:', err);
+      alert('Erreur lors de la mise à jour de la division');
+    }
+  };
+
+  const handleDeleteDivision = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette division ?')) {
+      try {
+        await deleteDivision(id);
+        setShowViewModal(false);
+        setSelectedDivision(null);
+      } catch (err) {
+        console.error('Error deleting division:', err);
+        alert('Erreur lors de la suppression de la division');
+      }
     }
   };
 
@@ -108,6 +107,18 @@ export function DivisionsPageContent({ agencyId, agencyName }: DivisionsPageCont
       </span>
     );
   };
+
+  if (error) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-white">Erreur de connexion</h2>
+          <p className="text-gray-400">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -204,7 +215,14 @@ export function DivisionsPageContent({ agencyId, agencyName }: DivisionsPageCont
               </tr>
             </thead>
             <tbody>
-              {filteredDivisions.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-16">
+                    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-400">Chargement des divisions...</p>
+                  </td>
+                </tr>
+              ) : filteredDivisions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-4">
@@ -227,10 +245,10 @@ export function DivisionsPageContent({ agencyId, agencyName }: DivisionsPageCont
                       <span className="text-white">{division.code}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-300">{division.chief}</span>
+                      <span className="text-gray-300">{division.chief_name}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-400">{division.members}</span>
+                      <span className="text-gray-400">{division.members_count}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-gray-300">{division.department}</span>
@@ -315,13 +333,13 @@ function AddDivisionModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (division: Omit<Division, 'id'>) => void;
+  onAdd: (d: Omit<Division, 'id' | 'agency_id' | 'created_at' | 'updated_at'>) => void;
 }) {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    chief: '',
-    members: 0,
+    chief_name: '',
+    members_count: 0,
     department: '',
     status: 'active' as Division['status'],
     notes: '',
@@ -368,8 +386,8 @@ function AddDivisionModal({
             <input
               type="text"
               required
-              value={formData.chief}
-              onChange={(e) => setFormData({ ...formData, chief: e.target.value })}
+              value={formData.chief_name}
+              onChange={(e) => setFormData({ ...formData, chief_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-emerald-500 transition-colors"
               placeholder="Badge ou nom"
@@ -381,8 +399,8 @@ function AddDivisionModal({
               type="number"
               required
               min="0"
-              value={formData.members}
-              onChange={(e) => setFormData({ ...formData, members: parseInt(e.target.value) || 0 })}
+              value={formData.members_count}
+              onChange={(e) => setFormData({ ...formData, members_count: parseInt(e.target.value) || 0 })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-emerald-500 transition-colors"
             />
@@ -421,7 +439,7 @@ function AddDivisionModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
@@ -494,11 +512,11 @@ function ViewDivisionModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Responsable</label>
-            <p className="text-white">{division.chief}</p>
+            <p className="text-white">{division.chief_name}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Effectifs</label>
-            <p className="text-white">{division.members}</p>
+            <p className="text-white">{division.members_count}</p>
           </div>
         </div>
 
@@ -546,7 +564,7 @@ function EditDivisionModal({
 }: {
   division: Division;
   onClose: () => void;
-  onSave: (division: Division) => void;
+  onSave: (d: Division) => void;
 }) {
   const [formData, setFormData] = useState(division);
 
@@ -589,8 +607,8 @@ function EditDivisionModal({
             <input
               type="text"
               required
-              value={formData.chief}
-              onChange={(e) => setFormData({ ...formData, chief: e.target.value })}
+              value={formData.chief_name}
+              onChange={(e) => setFormData({ ...formData, chief_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-emerald-500 transition-colors"
             />
@@ -601,8 +619,8 @@ function EditDivisionModal({
               type="number"
               required
               min="0"
-              value={formData.members}
-              onChange={(e) => setFormData({ ...formData, members: parseInt(e.target.value) || 0 })}
+              value={formData.members_count}
+              onChange={(e) => setFormData({ ...formData, members_count: parseInt(e.target.value) || 0 })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-emerald-500 transition-colors"
             />
@@ -640,7 +658,7 @@ function EditDivisionModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white

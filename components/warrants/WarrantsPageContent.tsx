@@ -16,57 +16,38 @@ import {
   X,
   Calendar,
   User,
+  Loader2,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useWarrants } from '@/hooks/useWarrants';
+import type { Warrant } from '@/services/warrantsRealtimeService';
 
 interface WarrantsPageContentProps {
   agencyId: string;
   agencyName: string;
 }
 
-interface Warrant {
-  id: string;
-  warrantNumber: string;
-  suspectName: string;
-  reason: string;
-  issuedDate: string;
-  status: 'active' | 'executed' | 'cancelled' | 'expired';
-  issuedBy: string;
-  notes?: string;
-}
-
 export function WarrantsPageContent({ agencyId, agencyName }: WarrantsPageContentProps) {
+  const {
+    warrants,
+    isLoading,
+    error,
+    createWarrant,
+    updateWarrant,
+    deleteWarrant,
+  } = useWarrants(agencyId);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [warrants, setWarrants] = useState<Warrant[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedWarrant, setSelectedWarrant] = useState<Warrant | null>(null);
 
-  // Charger les mandats depuis localStorage
-  useEffect(() => {
-    const storageKey = `warrants_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setWarrants(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading warrants:', error);
-      }
-    }
-  }, [agencyId]);
-
-  // Sauvegarder les mandats dans localStorage
-  useEffect(() => {
-    const storageKey = `warrants_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(warrants));
-  }, [warrants, agencyId]);
-
   // Filtrer les mandats
   const filteredWarrants = warrants.filter(warrant =>
-    warrant.suspectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    warrant.warrantNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    warrant.reason.toLowerCase().includes(searchQuery.toLowerCase())
+    (warrant.suspect_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (warrant.number?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (warrant.reason?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   // Calculer les statistiques
@@ -78,28 +59,40 @@ export function WarrantsPageContent({ agencyId, agencyName }: WarrantsPageConten
   };
 
   // Ajouter un mandat
-  const handleAddWarrant = (newWarrant: Omit<Warrant, 'id'>) => {
-    const warrant: Warrant = {
-      ...newWarrant,
-      id: Date.now().toString(),
-    };
-    setWarrants([...warrants, warrant]);
-    setShowAddModal(false);
+  const handleAddWarrant = async (newWarrant: Omit<Warrant, 'id'>) => {
+    try {
+      await createWarrant(newWarrant);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Failed to create warrant:', err);
+      alert('Erreur lors de la création du mandat');
+    }
   };
 
   // Modifier un mandat
-  const handleEditWarrant = (updatedWarrant: Warrant) => {
-    setWarrants(warrants.map(w => w.id === updatedWarrant.id ? updatedWarrant : w));
-    setShowEditModal(false);
-    setSelectedWarrant(null);
+  const handleEditWarrant = async (updatedWarrant: Warrant) => {
+    try {
+      const { id, ...updates } = updatedWarrant;
+      await updateWarrant(id, updates);
+      setShowEditModal(false);
+      setSelectedWarrant(null);
+    } catch (err) {
+      console.error('Failed to update warrant:', err);
+      alert('Erreur lors de la mise à jour du mandat');
+    }
   };
 
   // Supprimer un mandat
-  const handleDeleteWarrant = (id: string) => {
+  const handleDeleteWarrant = async (id: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce mandat ?')) {
-      setWarrants(warrants.filter(w => w.id !== id));
-      setShowViewModal(false);
-      setSelectedWarrant(null);
+      try {
+        await deleteWarrant(id);
+        setShowViewModal(false);
+        setSelectedWarrant(null);
+      } catch (err) {
+        console.error('Failed to delete warrant:', err);
+        alert('Erreur lors de la suppression du mandat');
+      }
     }
   };
 
@@ -111,7 +104,7 @@ export function WarrantsPageContent({ agencyId, agencyName }: WarrantsPageConten
       cancelled: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: XCircle, label: 'Annulé' },
       expired: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: Clock, label: 'Expiré' },
     };
-    const badge = badges[status];
+    const badge = badges[status] || badges.active;
     const Icon = badge.icon;
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${badge.color}`}>
@@ -121,13 +114,22 @@ export function WarrantsPageContent({ agencyId, agencyName }: WarrantsPageConten
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-400">Chargement de la base de données mandats...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       {/* En-tête */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Mandats d'Arrêt</h1>
-          <p className="text-gray-400">Gestion des mandats d'arrêt de l'agence {agencyName}</p>
+          <p className="text-gray-400">Gestion des mandats d'arrêt de l'agence {agencyName} (Synchronisé)</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -236,16 +238,16 @@ export function WarrantsPageContent({ agencyId, agencyName }: WarrantsPageConten
                 filteredWarrants.map((warrant) => (
                   <tr key={warrant.id} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
                     <td className="p-4">
-                      <span className="text-white font-medium">{warrant.warrantNumber}</span>
+                      <span className="text-white font-medium">{warrant.number}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-white">{warrant.suspectName}</span>
+                      <span className="text-white">{warrant.suspect_name}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-gray-300">{warrant.reason}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-400">{new Date(warrant.issuedDate).toLocaleDateString('fr-FR')}</span>
+                      <span className="text-gray-400">{new Date(warrant.issued_at).toLocaleDateString('fr-FR')}</span>
                     </td>
                     <td className="p-4">
                       {getStatusBadge(warrant.status)}
@@ -334,15 +336,15 @@ function AddWarrantModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (warrant: Omit<Warrant, 'id'>) => void;
+  onAdd: (warrant: Omit<Warrant, 'id' | 'created_at' | 'updated_at'>) => void;
 }) {
   const [formData, setFormData] = useState({
-    warrantNumber: '',
-    suspectName: '',
+    number: '',
+    suspect_name: '',
     reason: '',
-    issuedDate: new Date().toISOString().split('T')[0],
+    issued_at: new Date().toISOString().split('T')[0],
     status: 'active' as Warrant['status'],
-    issuedBy: '',
+    issued_by_name: '',
     notes: '',
   });
 
@@ -362,8 +364,8 @@ function AddWarrantModal({
             <input
               type="text"
               required
-              value={formData.warrantNumber}
-              onChange={(e) => setFormData({ ...formData, warrantNumber: e.target.value })}
+              value={formData.number}
+              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
               placeholder="W-2024-001"
@@ -376,8 +378,8 @@ function AddWarrantModal({
             <input
               type="text"
               required
-              value={formData.suspectName}
-              onChange={(e) => setFormData({ ...formData, suspectName: e.target.value })}
+              value={formData.suspect_name}
+              onChange={(e) => setFormData({ ...formData, suspect_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
               placeholder="John Doe"
@@ -408,8 +410,8 @@ function AddWarrantModal({
             <input
               type="date"
               required
-              value={formData.issuedDate}
-              onChange={(e) => setFormData({ ...formData, issuedDate: e.target.value })}
+              value={formData.issued_at}
+              onChange={(e) => setFormData({ ...formData, issued_at: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
             />
@@ -440,8 +442,8 @@ function AddWarrantModal({
           <input
             type="text"
             required
-            value={formData.issuedBy}
-            onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+            value={formData.issued_by_name}
+            onChange={(e) => setFormData({ ...formData, issued_by_name: e.target.value })}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                      focus:outline-none focus:border-red-500 transition-colors"
             placeholder="Juge Martin"
@@ -501,7 +503,7 @@ function ViewWarrantModal({
       cancelled: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: XCircle, label: 'Annulé' },
       expired: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: Clock, label: 'Expiré' },
     };
-    const badge = badges[status];
+    const badge = badges[status] || badges.active;
     const Icon = badge.icon;
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${badge.color}`}>
@@ -517,7 +519,7 @@ function ViewWarrantModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Numéro de mandat</label>
-            <p className="text-white font-medium">{warrant.warrantNumber}</p>
+            <p className="text-white font-medium">{warrant.number}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Statut</label>
@@ -527,7 +529,7 @@ function ViewWarrantModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">Suspect</label>
-          <p className="text-white font-medium">{warrant.suspectName}</p>
+          <p className="text-white font-medium">{warrant.suspect_name}</p>
         </div>
 
         <div>
@@ -538,11 +540,11 @@ function ViewWarrantModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Date d'émission</label>
-            <p className="text-white">{new Date(warrant.issuedDate).toLocaleDateString('fr-FR')}</p>
+            <p className="text-white">{new Date(warrant.issued_at).toLocaleDateString('fr-FR')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Émis par</label>
-            <p className="text-white">{warrant.issuedBy}</p>
+            <p className="text-white">{warrant.issued_by_name}</p>
           </div>
         </div>
 
@@ -584,6 +586,10 @@ function EditWarrantModal({
 }) {
   const [formData, setFormData] = useState(warrant);
 
+  useEffect(() => {
+    setFormData(warrant);
+  }, [warrant]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
@@ -600,8 +606,8 @@ function EditWarrantModal({
             <input
               type="text"
               required
-              value={formData.warrantNumber}
-              onChange={(e) => setFormData({ ...formData, warrantNumber: e.target.value })}
+              value={formData.number}
+              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
             />
@@ -613,8 +619,8 @@ function EditWarrantModal({
             <input
               type="text"
               required
-              value={formData.suspectName}
-              onChange={(e) => setFormData({ ...formData, suspectName: e.target.value })}
+              value={formData.suspect_name}
+              onChange={(e) => setFormData({ ...formData, suspect_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
             />
@@ -643,8 +649,8 @@ function EditWarrantModal({
             <input
               type="date"
               required
-              value={formData.issuedDate}
-              onChange={(e) => setFormData({ ...formData, issuedDate: e.target.value })}
+              value={formData.issued_at?.split('T')[0] || ''}
+              onChange={(e) => setFormData({ ...formData, issued_at: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-red-500 transition-colors"
             />
@@ -675,8 +681,8 @@ function EditWarrantModal({
           <input
             type="text"
             required
-            value={formData.issuedBy}
-            onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+            value={formData.issued_by_name}
+            onChange={(e) => setFormData({ ...formData, issued_by_name: e.target.value })}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                      focus:outline-none focus:border-red-500 transition-colors"
           />
@@ -687,7 +693,7 @@ function EditWarrantModal({
             Notes complémentaires
           </label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white

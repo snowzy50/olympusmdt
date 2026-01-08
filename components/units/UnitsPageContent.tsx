@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Building,
   Search,
@@ -13,49 +13,33 @@ import {
   Radio,
   CheckCircle,
   XCircle,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useUnits } from '@/hooks/useUnits';
+import type { Unit } from '@/services/unitsRealtimeService';
 
 interface UnitsPageContentProps {
   agencyId: string;
   agencyName: string;
 }
 
-interface Unit {
-  id: string;
-  name: string;
-  callsign: string;
-  type: string;
-  members: number;
-  commander: string;
-  status: 'active' | 'inactive' | 'on_patrol';
-  notes?: string;
-}
-
-export function UnitsPageContent({ agencyId, agencyName }: UnitsPageContentProps) {
+export function UnitsPageContent({ agencyId: propAgencyId, agencyName }: UnitsPageContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [units, setUnits] = useState<Unit[]>([]);
+  const {
+    units,
+    isLoading,
+    error,
+    createUnit,
+    updateUnit,
+    deleteUnit
+  } = useUnits(propAgencyId);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-
-  useEffect(() => {
-    const storageKey = `units_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setUnits(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading units:', error);
-      }
-    }
-  }, [agencyId]);
-
-  useEffect(() => {
-    const storageKey = `units_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(units));
-  }, [units, agencyId]);
 
   const filteredUnits = units.filter(unit =>
     unit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,30 +50,45 @@ export function UnitsPageContent({ agencyId, agencyName }: UnitsPageContentProps
   const stats = {
     total: units.length,
     active: units.filter(u => u.status === 'active').length,
-    totalMembers: units.reduce((sum, u) => sum + u.members, 0),
+    totalMembers: units.reduce((sum, u) => sum + (u.members_count || 0), 0),
     onPatrol: units.filter(u => u.status === 'on_patrol').length,
   };
 
-  const handleAddUnit = (newUnit: Omit<Unit, 'id'>) => {
-    const unit: Unit = {
-      ...newUnit,
-      id: Date.now().toString(),
-    };
-    setUnits([...units, unit]);
-    setShowAddModal(false);
+  const handleAddUnit = async (newUnit: Omit<Unit, 'id' | 'agency_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      await createUnit({
+        ...newUnit,
+        agency_id: propAgencyId
+      });
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Error creating unit:', err);
+      alert('Erreur lors de la création de l\'unité');
+    }
   };
 
-  const handleEditUnit = (updatedUnit: Unit) => {
-    setUnits(units.map(u => u.id === updatedUnit.id ? updatedUnit : u));
-    setShowEditModal(false);
-    setSelectedUnit(null);
-  };
-
-  const handleDeleteUnit = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette unité ?')) {
-      setUnits(units.filter(u => u.id !== id));
-      setShowViewModal(false);
+  const handleEditUnit = async (updatedUnit: Unit) => {
+    try {
+      const { id, created_at, updated_at, ...updates } = updatedUnit;
+      await updateUnit(id, updates);
+      setShowEditModal(false);
       setSelectedUnit(null);
+    } catch (err) {
+      console.error('Error updating unit:', err);
+      alert('Erreur lors de la mise à jour de l\'unité');
+    }
+  };
+
+  const handleDeleteUnit = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette unité ?')) {
+      try {
+        await deleteUnit(id);
+        setShowViewModal(false);
+        setSelectedUnit(null);
+      } catch (err) {
+        console.error('Error deleting unit:', err);
+        alert('Erreur lors de la suppression de l\'unité');
+      }
     }
   };
 
@@ -108,6 +107,18 @@ export function UnitsPageContent({ agencyId, agencyName }: UnitsPageContentProps
       </span>
     );
   };
+
+  if (error) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-white">Erreur de connexion</h2>
+          <p className="text-gray-400">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -204,7 +215,14 @@ export function UnitsPageContent({ agencyId, agencyName }: UnitsPageContentProps
               </tr>
             </thead>
             <tbody>
-              {filteredUnits.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-16">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-400">Chargement des unités...</p>
+                  </td>
+                </tr>
+              ) : filteredUnits.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-16">
                     <div className="flex flex-col items-center gap-4">
@@ -230,10 +248,10 @@ export function UnitsPageContent({ agencyId, agencyName }: UnitsPageContentProps
                       <span className="text-gray-300">{unit.type}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-400">{unit.members}</span>
+                      <span className="text-gray-400">{unit.members_count}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-300">{unit.commander}</span>
+                      <span className="text-gray-300">{unit.commander_name}</span>
                     </td>
                     <td className="p-4">
                       {getStatusBadge(unit.status)}
@@ -315,14 +333,14 @@ function AddUnitModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (unit: Omit<Unit, 'id'>) => void;
+  onAdd: (d: Omit<Unit, 'id' | 'agency_id' | 'created_at' | 'updated_at'>) => void;
 }) {
   const [formData, setFormData] = useState({
     name: '',
     callsign: '',
     type: '',
-    members: 0,
-    commander: '',
+    members_count: 0,
+    commander_name: '',
     status: 'active' as Unit['status'],
     notes: '',
   });
@@ -381,8 +399,8 @@ function AddUnitModal({
               type="number"
               required
               min="0"
-              value={formData.members}
-              onChange={(e) => setFormData({ ...formData, members: parseInt(e.target.value) || 0 })}
+              value={formData.members_count}
+              onChange={(e) => setFormData({ ...formData, members_count: parseInt(e.target.value) || 0 })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-indigo-500 transition-colors"
             />
@@ -395,8 +413,8 @@ function AddUnitModal({
             <input
               type="text"
               required
-              value={formData.commander}
-              onChange={(e) => setFormData({ ...formData, commander: e.target.value })}
+              value={formData.commander_name}
+              onChange={(e) => setFormData({ ...formData, commander_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-indigo-500 transition-colors"
               placeholder="Badge ou nom"
@@ -421,7 +439,7 @@ function AddUnitModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
@@ -505,11 +523,11 @@ function ViewUnitModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Membres</label>
-            <p className="text-white">{unit.members}</p>
+            <p className="text-white">{unit.members_count}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Commandant</label>
-            <p className="text-white">{unit.commander}</p>
+            <p className="text-white">{unit.commander_name}</p>
           </div>
         </div>
 
@@ -546,7 +564,7 @@ function EditUnitModal({
 }: {
   unit: Unit;
   onClose: () => void;
-  onSave: (unit: Unit) => void;
+  onSave: (d: Unit) => void;
 }) {
   const [formData, setFormData] = useState(unit);
 
@@ -601,8 +619,8 @@ function EditUnitModal({
               type="number"
               required
               min="0"
-              value={formData.members}
-              onChange={(e) => setFormData({ ...formData, members: parseInt(e.target.value) || 0 })}
+              value={formData.members_count}
+              onChange={(e) => setFormData({ ...formData, members_count: parseInt(e.target.value) || 0 })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-indigo-500 transition-colors"
             />
@@ -615,8 +633,8 @@ function EditUnitModal({
             <input
               type="text"
               required
-              value={formData.commander}
-              onChange={(e) => setFormData({ ...formData, commander: e.target.value })}
+              value={formData.commander_name || ''}
+              onChange={(e) => setFormData({ ...formData, commander_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-indigo-500 transition-colors"
             />
@@ -640,7 +658,7 @@ function EditUnitModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white

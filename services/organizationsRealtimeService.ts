@@ -4,7 +4,8 @@
  * Features: CRUD complet, synchronisation temps réel, validation
  */
 
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { supabase as supabaseClient } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type {
   Organization,
   OrganizationMember,
@@ -14,9 +15,6 @@ import type {
   OrganizationWithDetails,
   Coordinates,
 } from '@/types/organizations';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export interface OrganizationSubscriber {
   onOrganizationInsert?: (organization: Organization) => void;
@@ -33,7 +31,7 @@ export interface OrganizationSubscriber {
 }
 
 class OrganizationsRealtimeService {
-  private supabase = createClient(supabaseUrl, supabaseAnonKey);
+  private supabase = supabaseClient;
   private channel: RealtimeChannel | null = null;
   private subscribers: Map<string, OrganizationSubscriber> = new Map();
   private isConnected = false;

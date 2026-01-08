@@ -12,54 +12,37 @@ import {
   AlertCircle,
   Wrench,
   XCircle,
+  Loader2,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useVehicles } from '@/hooks/useVehicles';
+import type { Vehicle } from '@/services/vehiclesRealtimeService';
 
 interface VehiclesPageContentProps {
   agencyId: string;
   agencyName: string;
 }
 
-interface Vehicle {
-  id: string;
-  registration: string;
-  model: string;
-  type: string;
-  mileage: number;
-  status: 'in_service' | 'maintenance' | 'out_of_service';
-  assignedTo?: string;
-  notes?: string;
-}
-
 export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageContentProps) {
+  const {
+    vehicles,
+    isLoading,
+    error,
+    createVehicle,
+    updateVehicle,
+    deleteVehicle
+  } = useVehicles();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
-  useEffect(() => {
-    const storageKey = `vehicles_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setVehicles(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading vehicles:', error);
-      }
-    }
-  }, [agencyId]);
-
-  useEffect(() => {
-    const storageKey = `vehicles_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(vehicles));
-  }, [vehicles, agencyId]);
-
   const filteredVehicles = vehicles.filter(vehicle =>
-    vehicle.registration.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vehicle.type.toLowerCase().includes(searchQuery.toLowerCase())
+    (vehicle.plate?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (vehicle.model?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (vehicle.type?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   const stats = {
@@ -69,26 +52,38 @@ export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageConten
     outOfService: vehicles.filter(v => v.status === 'out_of_service').length,
   };
 
-  const handleAddVehicle = (newVehicle: Omit<Vehicle, 'id'>) => {
-    const vehicle: Vehicle = {
-      ...newVehicle,
-      id: Date.now().toString(),
-    };
-    setVehicles([...vehicles, vehicle]);
-    setShowAddModal(false);
+  const handleAddVehicle = async (newVehicle: Omit<Vehicle, 'id'>) => {
+    try {
+      await createVehicle(newVehicle);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Failed to create vehicle:', err);
+      alert('Erreur lors de la création du véhicule');
+    }
   };
 
-  const handleEditVehicle = (updatedVehicle: Vehicle) => {
-    setVehicles(vehicles.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-    setShowEditModal(false);
-    setSelectedVehicle(null);
-  };
-
-  const handleDeleteVehicle = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-      setVehicles(vehicles.filter(v => v.id !== id));
-      setShowViewModal(false);
+  const handleEditVehicle = async (updatedVehicle: Vehicle) => {
+    try {
+      const { id, ...updates } = updatedVehicle;
+      await updateVehicle(id, updates);
+      setShowEditModal(false);
       setSelectedVehicle(null);
+    } catch (err) {
+      console.error('Failed to update vehicle:', err);
+      alert('Erreur lors de la mise à jour du véhicule');
+    }
+  };
+
+  const handleDeleteVehicle = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+      try {
+        await deleteVehicle(id);
+        setShowViewModal(false);
+        setSelectedVehicle(null);
+      } catch (err) {
+        console.error('Failed to delete vehicle:', err);
+        alert('Erreur lors de la suppression du véhicule');
+      }
     }
   };
 
@@ -97,8 +92,11 @@ export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageConten
       in_service: { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'En service' },
       maintenance: { color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: Wrench, label: 'Maintenance' },
       out_of_service: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle, label: 'Hors service' },
+      stolen: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: AlertCircle, label: 'Volé' },
+      seized: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: AlertCircle, label: 'Saisi' },
+      clean: { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'En règle' },
     };
-    const badge = badges[status];
+    const badge = (badges[status] || badges.clean);
     const Icon = badge.icon;
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${badge.color}`}>
@@ -108,12 +106,21 @@ export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageConten
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-400">Chargement de la flotte de véhicules...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Véhicules de Service</h1>
-          <p className="text-gray-400">Gestion du parc automobile - {agencyName}</p>
+          <p className="text-gray-400">Gestion du parc automobile - {agencyName} (Synchronisé)</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -220,7 +227,7 @@ export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageConten
                 filteredVehicles.map((vehicle) => (
                   <tr key={vehicle.id} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
                     <td className="p-4">
-                      <span className="text-white font-medium">{vehicle.registration}</span>
+                      <span className="text-white font-medium">{vehicle.plate}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-gray-300">{vehicle.model}</span>
@@ -229,13 +236,13 @@ export function VehiclesPageContent({ agencyId, agencyName }: VehiclesPageConten
                       <span className="text-gray-300">{vehicle.type}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-400">{vehicle.mileage.toLocaleString()} km</span>
+                      <span className="text-gray-400">{(vehicle.mileage || 0).toLocaleString()} km</span>
                     </td>
                     <td className="p-4">
-                      {getStatusBadge(vehicle.status)}
+                      {getStatusBadge(vehicle.status || 'clean')}
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-300">{vehicle.assignedTo || '-'}</span>
+                      <span className="text-gray-300">{vehicle.assigned_to || '-'}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -317,12 +324,12 @@ function AddVehicleModal({
   onAdd: (vehicle: Omit<Vehicle, 'id'>) => void;
 }) {
   const [formData, setFormData] = useState({
-    registration: '',
+    plate: '',
     model: '',
     type: 'Sedan',
     mileage: 0,
     status: 'in_service' as Vehicle['status'],
-    assignedTo: '',
+    assigned_to: '',
     notes: '',
   });
 
@@ -340,8 +347,8 @@ function AddVehicleModal({
             <input
               type="text"
               required
-              value={formData.registration}
-              onChange={(e) => setFormData({ ...formData, registration: e.target.value })}
+              value={formData.plate}
+              onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-blue-500 transition-colors"
               placeholder="AB-123-CD"
@@ -409,8 +416,8 @@ function AddVehicleModal({
             <label className="block text-sm font-medium text-gray-300 mb-2">Assigné à</label>
             <input
               type="text"
-              value={formData.assignedTo}
-              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+              value={formData.assigned_to}
+              onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-blue-500 transition-colors"
               placeholder="Agent #123"
@@ -465,8 +472,11 @@ function ViewVehicleModal({
       in_service: { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'En service' },
       maintenance: { color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: Wrench, label: 'Maintenance' },
       out_of_service: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle, label: 'Hors service' },
+      stolen: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: AlertCircle, label: 'Volé' },
+      seized: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: AlertCircle, label: 'Saisi' },
+      clean: { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: CheckCircle, label: 'En règle' },
     };
-    const badge = badges[status];
+    const badge = (badges[status] || badges.clean);
     const Icon = badge.icon;
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${badge.color}`}>
@@ -482,7 +492,7 @@ function ViewVehicleModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Immatriculation</label>
-            <p className="text-white font-medium">{vehicle.registration}</p>
+            <p className="text-white font-medium">{vehicle.plate}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Modèle</label>
@@ -497,18 +507,18 @@ function ViewVehicleModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Kilométrage</label>
-            <p className="text-white">{vehicle.mileage.toLocaleString()} km</p>
+            <p className="text-white">{(vehicle.mileage || 0).toLocaleString()} km</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Statut</label>
-            {getStatusBadge(vehicle.status)}
+            {getStatusBadge(vehicle.status || 'clean')}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Assigné à</label>
-            <p className="text-white">{vehicle.assignedTo || 'Non assigné'}</p>
+            <p className="text-white">{vehicle.assigned_to || 'Non assigné'}</p>
           </div>
         </div>
 
@@ -563,8 +573,8 @@ function EditVehicleModal({
             <input
               type="text"
               required
-              value={formData.registration}
-              onChange={(e) => setFormData({ ...formData, registration: e.target.value })}
+              value={formData.plate}
+              onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-blue-500 transition-colors"
             />
@@ -630,8 +640,8 @@ function EditVehicleModal({
             <label className="block text-sm font-medium text-gray-300 mb-2">Assigné à</label>
             <input
               type="text"
-              value={formData.assignedTo}
-              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+              value={formData.assigned_to || ''}
+              onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-blue-500 transition-colors"
             />
@@ -641,7 +651,7 @@ function EditVehicleModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white

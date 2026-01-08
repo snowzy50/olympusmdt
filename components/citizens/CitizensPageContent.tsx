@@ -14,18 +14,10 @@ import {
   CheckCircle,
   AlertTriangle,
   Users,
+  Loader2,
 } from 'lucide-react';
-
-interface Citizen {
-  id: string;
-  firstName: string;
-  lastName: string;
-  license: string;
-  phone: string;
-  address: string;
-  status: 'clean' | 'wanted' | 'flagged';
-  notes?: string;
-}
+import { useCitizens } from '@/hooks/useCitizens';
+import type { Citizen } from '@/services/citizensRealtimeService';
 
 interface CitizensPageContentProps {
   agencyId: string;
@@ -33,25 +25,20 @@ interface CitizensPageContentProps {
 }
 
 export function CitizensPageContent({ agencyId, agencyName }: CitizensPageContentProps) {
-  const [citizens, setCitizens] = useState<Citizen[]>([]);
+  const {
+    citizens,
+    isLoading,
+    error,
+    createCitizen,
+    updateCitizen,
+    deleteCitizen
+  } = useCitizens();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(`citizens_${agencyId}`);
-    if (stored) {
-      setCitizens(JSON.parse(stored));
-    }
-  }, [agencyId]);
-
-  useEffect(() => {
-    if (citizens.length > 0) {
-      localStorage.setItem(`citizens_${agencyId}`, JSON.stringify(citizens));
-    }
-  }, [citizens, agencyId]);
 
   const stats = {
     total: citizens.length,
@@ -64,30 +51,42 @@ export function CitizensPageContent({ agencyId, agencyName }: CitizensPageConten
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
     return (
-      citizen.firstName.toLowerCase().includes(search) ||
-      citizen.lastName.toLowerCase().includes(search) ||
-      citizen.license.toLowerCase().includes(search)
+      citizen.first_name.toLowerCase().includes(search) ||
+      citizen.last_name.toLowerCase().includes(search) ||
+      (citizen.license_number && citizen.license_number.toLowerCase().includes(search))
     );
   });
 
-  const handleAddCitizen = (newCitizen: Omit<Citizen, 'id'>) => {
-    const citizen: Citizen = {
-      ...newCitizen,
-      id: Date.now().toString(),
-    };
-    setCitizens([...citizens, citizen]);
-    setShowAddModal(false);
+  const handleAddCitizen = async (newCitizen: Omit<Citizen, 'id'>) => {
+    try {
+      await createCitizen(newCitizen);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Failed to create citizen:', err);
+      alert('Erreur lors de la création du citoyen');
+    }
   };
 
-  const handleEditCitizen = (updatedCitizen: Citizen) => {
-    setCitizens(citizens.map(c => c.id === updatedCitizen.id ? updatedCitizen : c));
-    setShowEditModal(false);
-    setSelectedCitizen(null);
+  const handleEditCitizen = async (updatedCitizen: Citizen) => {
+    try {
+      const { id, ...updates } = updatedCitizen;
+      await updateCitizen(id, updates);
+      setShowEditModal(false);
+      setSelectedCitizen(null);
+    } catch (err) {
+      console.error('Failed to update citizen:', err);
+      alert('Erreur lors de la mise à jour du citoyen');
+    }
   };
 
-  const handleDeleteCitizen = (id: string) => {
+  const handleDeleteCitizen = async (id: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce citoyen ?')) {
-      setCitizens(citizens.filter(c => c.id !== id));
+      try {
+        await deleteCitizen(id);
+      } catch (err) {
+        console.error('Failed to delete citizen:', err);
+        alert('Erreur lors de la suppression du citoyen');
+      }
     }
   };
 
@@ -107,13 +106,35 @@ export function CitizensPageContent({ agencyId, agencyName }: CitizensPageConten
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-400">Chargement de la base de données citoyens...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">Erreur de connexion</h2>
+        <p className="text-gray-400 max-w-md">
+          Impossible de se connecter à la base de données Supabase. Veuillez vérifier vos variables d'environnement.
+        </p>
+        <p className="text-red-400 text-sm mt-4">{error.message}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Gestion des Citoyens</h1>
-          <p className="text-gray-400">Base de données citoyens de l'agence {agencyName}</p>
+          <p className="text-gray-400">Base de données citoyens de l'agence {agencyName} (Synchronisé)</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -188,10 +209,6 @@ export function CitizensPageContent({ agencyId, agencyName }: CitizensPageConten
               className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-750 text-white rounded-lg transition-colors">
-            <Filter className="w-5 h-5" />
-            Filtres
-          </button>
         </div>
       </div>
 
@@ -215,12 +232,12 @@ export function CitizensPageContent({ agencyId, agencyName }: CitizensPageConten
                   <tr key={citizen.id} className="hover:bg-gray-750 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-white font-medium">
-                        {citizen.firstName} {citizen.lastName}
+                        {citizen.first_name} {citizen.last_name}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{citizen.license}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{citizen.phone}</td>
-                    <td className="px-6 py-4 text-gray-300">{citizen.address}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{citizen.license_number || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{citizen.phone || '-'}</td>
+                    <td className="px-6 py-4 text-gray-300">{citizen.address || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(citizen.status)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -312,9 +329,9 @@ function AddCitizenModal({
   onAdd: (citizen: Omit<Citizen, 'id'>) => void;
 }) {
   const [formData, setFormData] = useState<Omit<Citizen, 'id'>>({
-    firstName: '',
-    lastName: '',
-    license: '',
+    first_name: '',
+    last_name: '',
+    license_number: '',
     phone: '',
     address: '',
     status: 'clean',
@@ -325,9 +342,9 @@ function AddCitizenModal({
     e.preventDefault();
     onAdd(formData);
     setFormData({
-      firstName: '',
-      lastName: '',
-      license: '',
+      first_name: '',
+      last_name: '',
+      license_number: '',
       phone: '',
       address: '',
       status: 'clean',
@@ -346,8 +363,8 @@ function AddCitizenModal({
             <input
               type="text"
               required
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -356,8 +373,8 @@ function AddCitizenModal({
             <input
               type="text"
               required
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -366,8 +383,8 @@ function AddCitizenModal({
             <input
               type="text"
               required
-              value={formData.license}
-              onChange={(e) => setFormData({ ...formData, license: e.target.value })}
+              value={formData.license_number}
+              onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="DL-123456"
             />
@@ -454,23 +471,23 @@ function ViewCitizenModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-gray-700 p-4 rounded-lg">
             <p className="text-gray-400 text-sm mb-1">Prénom</p>
-            <p className="text-white font-medium">{citizen.firstName}</p>
+            <p className="text-white font-medium">{citizen.first_name}</p>
           </div>
           <div className="bg-gray-700 p-4 rounded-lg">
             <p className="text-gray-400 text-sm mb-1">Nom</p>
-            <p className="text-white font-medium">{citizen.lastName}</p>
+            <p className="text-white font-medium">{citizen.last_name}</p>
           </div>
           <div className="bg-gray-700 p-4 rounded-lg">
             <p className="text-gray-400 text-sm mb-1">Permis</p>
-            <p className="text-white font-medium">{citizen.license}</p>
+            <p className="text-white font-medium">{citizen.license_number || '-'}</p>
           </div>
           <div className="bg-gray-700 p-4 rounded-lg">
             <p className="text-gray-400 text-sm mb-1">Téléphone</p>
-            <p className="text-white font-medium">{citizen.phone}</p>
+            <p className="text-white font-medium">{citizen.phone || '-'}</p>
           </div>
           <div className="bg-gray-700 p-4 rounded-lg col-span-2">
             <p className="text-gray-400 text-sm mb-1">Adresse</p>
-            <p className="text-white font-medium">{citizen.address}</p>
+            <p className="text-white font-medium">{citizen.address || '-'}</p>
           </div>
         </div>
         {citizen.notes && (
@@ -518,8 +535,8 @@ function EditCitizenModal({
             <input
               type="text"
               required
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -528,8 +545,8 @@ function EditCitizenModal({
             <input
               type="text"
               required
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -538,8 +555,8 @@ function EditCitizenModal({
             <input
               type="text"
               required
-              value={formData.license}
-              onChange={(e) => setFormData({ ...formData, license: e.target.value })}
+              value={formData.license_number || ''}
+              onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -548,7 +565,7 @@ function EditCitizenModal({
             <input
               type="text"
               required
-              value={formData.phone}
+              value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -558,7 +575,7 @@ function EditCitizenModal({
             <input
               type="text"
               required
-              value={formData.address}
+              value={formData.address || ''}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -580,7 +597,7 @@ function EditCitizenModal({
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
             rows={3}
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />

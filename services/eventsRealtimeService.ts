@@ -51,11 +51,12 @@ class EventsRealtimeService {
     onUpdate?: EventCallback;
     onDelete?: DeleteCallback;
     onError?: ErrorCallback;
+    onConnected?: () => void;
   }> = new Map();
   private currentAgencyId: string | null = null;
   private isConnected = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): EventsRealtimeService {
     if (!EventsRealtimeService.instance) {
@@ -349,11 +350,14 @@ class EventsRealtimeService {
 
   /**
    * Générer un ID unique pour un événement
+   * Format: EVE-YYYY-TIMESTAMP-RANDOM
    */
   generateEventId(): string {
     const year = new Date().getFullYear();
+    // Utiliser le timestamp + aléatoire pour garantir l'unicité
+    const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `EVE-${year}-${random}`;
+    return `EVE-${year}-${timestamp}-${random}`;
   }
 
   /**

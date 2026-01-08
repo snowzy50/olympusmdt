@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   FileCheck,
   Search,
@@ -11,55 +11,37 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Send,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useSummons } from '@/hooks/useSummons';
+import type { Summons } from '@/services/summonsRealtimeService';
 
 interface SummonsPageContentProps {
   agencyId: string;
   agencyName: string;
 }
 
-interface Summons {
-  id: string;
-  summonsNumber: string;
-  summonedPerson: string;
-  reason: string;
-  dateTime: string;
-  location: string;
-  status: 'pending' | 'honored' | 'not_honored' | 'cancelled';
-  issuedBy: string;
-  notes?: string;
-}
-
-export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentProps) {
+export function SummonsPageContent({ agencyId: propAgencyId, agencyName }: SummonsPageContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [summons, setSummons] = useState<Summons[]>([]);
+  const {
+    summons,
+    isLoading,
+    error,
+    createSummons,
+    updateSummons,
+    deleteSummons
+  } = useSummons(propAgencyId);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSummons, setSelectedSummons] = useState<Summons | null>(null);
 
-  useEffect(() => {
-    const storageKey = `summons_${agencyId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setSummons(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading summons:', error);
-      }
-    }
-  }, [agencyId]);
-
-  useEffect(() => {
-    const storageKey = `summons_${agencyId}`;
-    localStorage.setItem(storageKey, JSON.stringify(summons));
-  }, [summons, agencyId]);
-
   const filteredSummons = summons.filter(s =>
-    s.summonedPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.summonsNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.person_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.reason.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -70,26 +52,41 @@ export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentP
     notHonored: summons.filter(s => s.status === 'not_honored').length,
   };
 
-  const handleAddSummons = (newSummons: Omit<Summons, 'id'>) => {
-    const summonsItem: Summons = {
-      ...newSummons,
-      id: Date.now().toString(),
-    };
-    setSummons([...summons, summonsItem]);
-    setShowAddModal(false);
+  const handleAddSummons = async (newSummons: Omit<Summons, 'id' | 'agency_id'>) => {
+    try {
+      await createSummons({
+        ...newSummons,
+        agency_id: propAgencyId
+      });
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Error creating summons:', err);
+      alert('Erreur lors de la création de la convocation');
+    }
   };
 
-  const handleEditSummons = (updatedSummons: Summons) => {
-    setSummons(summons.map(s => s.id === updatedSummons.id ? updatedSummons : s));
-    setShowEditModal(false);
-    setSelectedSummons(null);
-  };
-
-  const handleDeleteSummons = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette convocation ?')) {
-      setSummons(summons.filter(s => s.id !== id));
-      setShowViewModal(false);
+  const handleEditSummons = async (updatedSummons: Summons) => {
+    try {
+      const { id, created_at, updated_at, ...updates } = updatedSummons;
+      await updateSummons(id, updates);
+      setShowEditModal(false);
       setSelectedSummons(null);
+    } catch (err) {
+      console.error('Error updating summons:', err);
+      alert('Erreur lors de la mise à jour de la convocation');
+    }
+  };
+
+  const handleDeleteSummons = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette convocation ?')) {
+      try {
+        await deleteSummons(id);
+        setShowViewModal(false);
+        setSelectedSummons(null);
+      } catch (err) {
+        console.error('Error deleting summons:', err);
+        alert('Erreur lors de la suppression de la convocation');
+      }
     }
   };
 
@@ -109,6 +106,18 @@ export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentP
       </span>
     );
   };
+
+  if (error) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-white">Erreur de connexion</h2>
+          <p className="text-gray-400">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -204,7 +213,14 @@ export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentP
               </tr>
             </thead>
             <tbody>
-              {filteredSummons.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-16">
+                    <Loader2 className="w-8 h-8 text-purple-500 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-400">Chargement des convocations...</p>
+                  </td>
+                </tr>
+              ) : filteredSummons.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-16">
                     <div className="flex flex-col items-center gap-4">
@@ -221,16 +237,16 @@ export function SummonsPageContent({ agencyId, agencyName }: SummonsPageContentP
                 filteredSummons.map((summon) => (
                   <tr key={summon.id} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
                     <td className="p-4">
-                      <span className="text-white font-medium">{summon.summonsNumber}</span>
+                      <span className="text-white font-medium">{summon.number}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-white">{summon.summonedPerson}</span>
+                      <span className="text-white">{summon.person_name}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-gray-300">{summon.reason}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-400">{new Date(summon.dateTime).toLocaleString('fr-FR')}</span>
+                      <span className="text-gray-400">{new Date(summon.scheduled_at).toLocaleString('fr-FR')}</span>
                     </td>
                     <td className="p-4">
                       {getStatusBadge(summon.status)}
@@ -312,16 +328,16 @@ function AddSummonsModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (summons: Omit<Summons, 'id'>) => void;
+  onAdd: (s: Omit<Summons, 'id' | 'agency_id'>) => void;
 }) {
   const [formData, setFormData] = useState({
-    summonsNumber: '',
-    summonedPerson: '',
+    number: '',
+    person_name: '',
     reason: '',
-    dateTime: '',
+    scheduled_at: '',
     location: '',
     status: 'pending' as Summons['status'],
-    issuedBy: '',
+    issued_by_name: '',
     notes: '',
   });
 
@@ -339,8 +355,8 @@ function AddSummonsModal({
             <input
               type="text"
               required
-              value={formData.summonsNumber}
-              onChange={(e) => setFormData({ ...formData, summonsNumber: e.target.value })}
+              value={formData.number}
+              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
               placeholder="S-2024-001"
@@ -351,8 +367,8 @@ function AddSummonsModal({
             <input
               type="text"
               required
-              value={formData.summonedPerson}
-              onChange={(e) => setFormData({ ...formData, summonedPerson: e.target.value })}
+              value={formData.person_name}
+              onChange={(e) => setFormData({ ...formData, person_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
               placeholder="Nom complet"
@@ -379,8 +395,8 @@ function AddSummonsModal({
             <input
               type="datetime-local"
               required
-              value={formData.dateTime}
-              onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
+              value={formData.scheduled_at}
+              onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -420,8 +436,8 @@ function AddSummonsModal({
             <input
               type="text"
               required
-              value={formData.issuedBy}
-              onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+              value={formData.issued_by_name}
+              onChange={(e) => setFormData({ ...formData, issued_by_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
               placeholder="Badge ou nom"
@@ -432,7 +448,7 @@ function AddSummonsModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
@@ -495,7 +511,7 @@ function ViewSummonsModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Numéro</label>
-            <p className="text-white font-medium">{summons.summonsNumber}</p>
+            <p className="text-white font-medium">{summons.number}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Statut</label>
@@ -506,7 +522,7 @@ function ViewSummonsModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Convoqué</label>
-            <p className="text-white font-medium">{summons.summonedPerson}</p>
+            <p className="text-white font-medium">{summons.person_name}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Motif</label>
@@ -517,7 +533,7 @@ function ViewSummonsModal({
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Date et heure</label>
-            <p className="text-white">{new Date(summons.dateTime).toLocaleString('fr-FR')}</p>
+            <p className="text-white">{new Date(summons.scheduled_at).toLocaleString('fr-FR')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Lieu</label>
@@ -527,7 +543,7 @@ function ViewSummonsModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">Émis par</label>
-          <p className="text-white">{summons.issuedBy}</p>
+          <p className="text-white">{summons.issued_by_name}</p>
         </div>
 
         {summons.notes && (
@@ -563,7 +579,7 @@ function EditSummonsModal({
 }: {
   summons: Summons;
   onClose: () => void;
-  onSave: (summons: Summons) => void;
+  onSave: (s: Summons) => void;
 }) {
   const [formData, setFormData] = useState(summons);
 
@@ -581,8 +597,8 @@ function EditSummonsModal({
             <input
               type="text"
               required
-              value={formData.summonsNumber}
-              onChange={(e) => setFormData({ ...formData, summonsNumber: e.target.value })}
+              value={formData.number}
+              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -592,8 +608,8 @@ function EditSummonsModal({
             <input
               type="text"
               required
-              value={formData.summonedPerson}
-              onChange={(e) => setFormData({ ...formData, summonedPerson: e.target.value })}
+              value={formData.person_name}
+              onChange={(e) => setFormData({ ...formData, person_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -618,8 +634,8 @@ function EditSummonsModal({
             <input
               type="datetime-local"
               required
-              value={formData.dateTime}
-              onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
+              value={formData.scheduled_at}
+              onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -658,8 +674,8 @@ function EditSummonsModal({
             <input
               type="text"
               required
-              value={formData.issuedBy}
-              onChange={(e) => setFormData({ ...formData, issuedBy: e.target.value })}
+              value={formData.issued_by_name}
+              onChange={(e) => setFormData({ ...formData, issued_by_name: e.target.value })}
               className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white
                        focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -669,7 +685,7 @@ function EditSummonsModal({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
           <textarea
-            value={formData.notes}
+            value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white

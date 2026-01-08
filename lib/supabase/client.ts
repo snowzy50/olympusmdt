@@ -5,11 +5,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// Détection robuste des variables d'environnement (Next.js vs Vite)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL or Anon Key is missing. Please check your environment variables.');
+if (typeof window !== 'undefined') {
+  if (!supabaseUrl) console.warn('Supabase URL is missing!');
+  if (!supabaseAnonKey) console.warn('Supabase Anon Key is missing!');
+
+  if (supabaseUrl && supabaseAnonKey) {
+    console.log('Supabase Client initialized with URL:', supabaseUrl.substring(0, 15) + '...');
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -18,8 +24,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
   },
   realtime: {
-    timeout: 30000, // 30 secondes au lieu de 10 par défaut
-    heartbeatIntervalMs: 15000, // Heartbeat toutes les 15 secondes
+    timeout: 30000,
+    heartbeatIntervalMs: 15000,
   },
 });
 
