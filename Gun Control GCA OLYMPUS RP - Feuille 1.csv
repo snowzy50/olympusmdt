@@ -1,0 +1,70 @@
+"
+TYPE D'ARME
+",,,"
+Détention 
+Libre","Port 
+Interdit","Détention
+Interdite","Nécéssitent 
+un Permis","Soumises 
+à déclaration"
+,,,,,,,
+Catégorie D,,,,,,,
+,,,,,,,
+Couteau,,,TRUE,,,,
+Marteau,,,TRUE,,,,
+Pied-de-biche,,,TRUE,,,,
+Batte de Baseball,,,TRUE,,,,
+Club de Golf,,,TRUE,,,,
+Bouteille cassée,,,TRUE,,,,
+Dague antique,,,,TRUE,,,TRUE
+Hachette,,,,TRUE,,,
+Poing Américain,,,,TRUE,TRUE,,
+Machette,,,,TRUE,,,
+Lampe de poche,,,TRUE,,,,
+Couteau à cran d'arrêt,,,,TRUE,,,
+Queue de Billard,,,TRUE,,,,
+Clé Anglaise,,,TRUE,,,,
+Catégorie C,,,,,,,
+,,,,,,,
+Fusil à pompe,,,,TRUE,TRUE,,
+Fusil à canon scié,,,,TRUE,,,TRUE
+Mousquet,,,TRUE,,,TRUE,TRUE
+Catégorie B,,,,,,,
+,,,,,,,
+Pistolet (Berreta),,,FALSE,TRUE,TRUE,TRUE,TRUE
+Pistolet de combat (Glock),,,FALSE,TRUE,TRUE,TRUE,TRUE
+Pistolet Cal.50 / Pistolet Lourd,,,,TRUE,TRUE,,
+Pistolet à impulsion électrique,,,,TRUE,TRUE,TRUE,
+Pétoire,,,FALSE,TRUE,TRUE,TRUE,TRUE
+Pistolet Vintage,,,,TRUE,TRUE,,TRUE
+Pistolet de précision,,,,TRUE,TRUE,TRUE,
+Catégorie A,,,,,,,
+,,,,,,,
+Pistolet mitrailleur,,,,TRUE,TRUE,,
+Mitraillette,,,,TRUE,TRUE,,
+Mitraillette d'assaut,,,,TRUE,TRUE,,
+Sulfateuse Gusenberg,,,,TRUE,TRUE,,
+ADP de combat,,,,TRUE,TRUE,,
+Fusil d'assaut,,,,TRUE,TRUE,,
+,Scorpion/Mini SMG,,,TRUE,TRUE,,
+Carabine,,,,TRUE,TRUE,,
+Carabine spéciale,,,,TRUE,TRUE,,
+Fusil à pompe d'assaut,,,,TRUE,TRUE,,
+Fusil à pompe lourd,,,,TRUE,TRUE,,
+Fusil à lunette,,,,TRUE,TRUE,,
+Fusil de précision,,,,TRUE,TRUE,,
+fusil de précision lourd,,,,TRUE,TRUE,,
+Grenade,,,,TRUE,TRUE,,
+Bombe collante,,,,TRUE,TRUE,,
+Gaz Lacrimogène,,,,TRUE,TRUE,,
+Cocktail Molotov,,,,TRUE,TRUE,,
+,,,,,,,
+Catégorie des armes à feu,,,,,,,
+,,,,,,,
+A,"   Toutes armes à feu automatiques, mines, bombes, et armes avec munitions à balles perforantes",,,,,,
+B,"   Armes de poing, armes à feu courtes semi-automatiques",,,,,,
+C,   Fusils à pompe et armes de chasse.  ,,,,,,
+D,"   Armes blanches tranchantes, contondantes et non-létales",,,,,,
+ * Les armes - même en détention libre - ne seront pas restituées si le citoyen en a fait usage contre autrui. ,,,,,,,
+,,,,,,,
+Création John Altaro Copyright 2023,,,,,,,

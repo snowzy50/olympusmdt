@@ -297,13 +297,25 @@ class EventsRealtimeService {
    */
   async createEvent(event: Omit<CalendarEvent, 'created_at' | 'updated_at'>): Promise<CalendarEvent> {
     try {
+      console.log('[EventsRealtime] Création événement avec données:', JSON.stringify(event, null, 2));
+
       const { data, error } = await this.supabase
         .from('events')
         .insert([event])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[EventsRealtime] Erreur Supabase:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`${error.message}${error.hint ? ` (${error.hint})` : ''}`);
+      }
+
+      console.log('[EventsRealtime] ✅ Événement créé:', data);
       return data as CalendarEvent;
     } catch (error) {
       console.error('[EventsRealtime] Erreur lors de la création de l\'événement:', error);

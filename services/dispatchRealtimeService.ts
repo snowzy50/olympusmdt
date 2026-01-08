@@ -265,15 +265,27 @@ class DispatchRealtimeService {
    */
   async createCall(call: Omit<DispatchCall, 'created_at' | 'updated_at'>): Promise<DispatchCall> {
     try {
+      console.log('[DispatchRealtime] Création appel avec données:', JSON.stringify(call, null, 2));
+
       const { data, error } = await this.supabase
         .from('dispatch_calls')
         .insert([call])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[DispatchRealtime] Erreur Supabase:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`${error.message}${error.hint ? ` (${error.hint})` : ''}`);
+      }
+
+      console.log('[DispatchRealtime] ✅ Appel créé:', data);
       return data as DispatchCall;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[DispatchRealtime] Erreur lors de la création de l\'appel:', error);
       throw error;
     }

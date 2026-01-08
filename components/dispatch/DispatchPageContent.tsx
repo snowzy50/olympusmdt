@@ -9,11 +9,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import { useDispatchCalls } from '@/hooks/useDispatchCalls';
 import { DispatchPanel } from './DispatchPanel';
 import { DispatchCallModal } from './DispatchCallModal';
 import type { DispatchCall } from '@/services/dispatchRealtimeService';
-import { Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff, Shield } from 'lucide-react';
+import { DefconWidget } from '@/components/defcon/DefconWidget';
+import { useDefcon } from '@/hooks/useDefcon';
 
 // Import dynamique de la carte pour éviter les erreurs SSR avec Leaflet
 const InteractiveGTAMap = dynamic(
@@ -37,6 +40,9 @@ interface DispatchPageContentProps {
 }
 
 export function DispatchPageContent({ agencyId, agencyName }: DispatchPageContentProps) {
+  const { data: session } = useSession();
+  const userId = session?.user?.name || session?.user?.email || undefined;
+
   const {
     calls,
     isLoading,
@@ -46,7 +52,7 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
     updateCall,
     deleteCall,
     getActiveCalls,
-  } = useDispatchCalls({ agencyId });
+  } = useDispatchCalls({ agencyId, userId });
 
   const [selectedCall, setSelectedCall] = useState<DispatchCall | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -121,9 +127,10 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
         await createCall(data as any);
       }
       handleCloseModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Dispatch] Erreur sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde de l\'appel');
+      const errorMessage = error?.message || error?.details || 'Erreur inconnue';
+      alert(`Erreur lors de la sauvegarde: ${errorMessage}`);
     }
   }, [selectedCall, createCall, updateCall, handleCloseModal]);
 
@@ -145,9 +152,14 @@ export function DispatchPageContent({ agencyId, agencyName }: DispatchPageConten
       {/* Header */}
       <div className="flex-shrink-0 p-3 border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Dispatch Central - {agencyName}</h1>
-            <p className="text-sm text-gray-400">Système de gestion des appels d'intervention</p>
+          <div className="flex items-center gap-6">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Dispatch Central - {agencyName}</h1>
+              <p className="text-sm text-gray-400">Système de gestion des appels d'intervention</p>
+            </div>
+
+            {/* DEFCON Widget compact */}
+            <DefconWidget agencyId={agencyId} className="w-64" />
           </div>
 
           {/* Badge de connexion Realtime */}

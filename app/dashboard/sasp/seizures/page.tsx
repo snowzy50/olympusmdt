@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
 import {
   Search,
@@ -16,9 +16,13 @@ import {
   Trash2,
   X,
   AlertTriangle,
+  Target,
 } from 'lucide-react';
 import { useSupabaseSeizures } from '@/hooks/useSupabaseSeizures';
+import { WeaponSelector } from '@/components/legal/WeaponSelector';
 import type { Seizure, SeizureInsert } from '@/lib/supabase/client';
+import type { Weapon } from '@/types/weapons';
+import { WEAPON_CATEGORIES, getWeaponLegalStatus } from '@/types/weapons';
 
 /**
  * Module de gestion des saisies
@@ -48,6 +52,7 @@ export default function SeizuresPage() {
   const [viewingSeizure, setViewingSeizure] = useState<Seizure | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedWeapon, setSelectedWeapon] = useState<Weapon | null>(null);
   const [formData, setFormData] = useState<Partial<Seizure>>({
     type: 'weapons',
     description: '',
@@ -62,6 +67,28 @@ export default function SeizuresPage() {
   });
 
   const { seizures, isLoading, error, addSeizure, updateSeizure, deleteSeizure } = useSupabaseSeizures();
+
+  // Auto-fill when weapon is selected
+  useEffect(() => {
+    if (selectedWeapon && formData.type === 'weapons') {
+      const legalStatus = getWeaponLegalStatus(selectedWeapon);
+      const categoryInfo = WEAPON_CATEGORIES[selectedWeapon.category];
+      setFormData(prev => ({
+        ...prev,
+        description: `${selectedWeapon.name} - ${legalStatus}`,
+        weapon_id: selectedWeapon.id,
+        weapon_category: selectedWeapon.category,
+        unit: 'unité',
+      }));
+    }
+  }, [selectedWeapon]);
+
+  // Reset weapon selection when type changes
+  useEffect(() => {
+    if (formData.type !== 'weapons') {
+      setSelectedWeapon(null);
+    }
+  }, [formData.type]);
 
   const filteredSeizures = seizures.filter((seizure) => {
     const matchesSearch =
@@ -78,6 +105,7 @@ export default function SeizuresPage() {
   // Handlers
   const handleCreate = () => {
     setEditingSeizure(null);
+    setSelectedWeapon(null);
     setFormData({
       type: 'weapons',
       description: '',
@@ -99,6 +127,7 @@ export default function SeizuresPage() {
 
   const handleEdit = (seizure: Seizure) => {
     setEditingSeizure(seizure);
+    setSelectedWeapon(null); // Reset weapon selector when editing
     setFormData(seizure);
     setShowModal(true);
   };
@@ -382,15 +411,41 @@ export default function SeizuresPage() {
                 </select>
               </div>
 
+              {/* Weapon Selector - Only for weapons type */}
+              {formData.type === 'weapons' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Sélectionner une arme (Gun Control)
+                    </div>
+                  </label>
+                  <WeaponSelector
+                    value={selectedWeapon}
+                    onChange={setSelectedWeapon}
+                    placeholder="Rechercher dans le registre des armes..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sélectionnez une arme pour auto-remplir la description et la catégorie
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   Description *
+                  {selectedWeapon && (
+                    <span className="ml-2 text-xs text-blue-400">
+                      (Cat. {selectedWeapon.category} - {WEAPON_CATEGORIES[selectedWeapon.category].nameFr})
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Description de l'objet saisi..."
                   required
                 />
               </div>

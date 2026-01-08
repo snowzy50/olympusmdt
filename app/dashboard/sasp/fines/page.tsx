@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '@/components/ui';
 import {
   Search,
@@ -17,9 +17,15 @@ import {
   X,
   Trash2,
   AlertTriangle,
+  Scale,
+  Zap,
 } from 'lucide-react';
 import { useSupabaseFines } from '@/hooks/useSupabaseFines';
+import { useDefcon } from '@/hooks/useDefcon';
+import { InfractionSelector } from '@/components/legal/InfractionSelector';
 import type { Fine, FineInsert } from '@/lib/supabase/client';
+import type { Infraction } from '@/types/infractions';
+import { formatFineAmount } from '@/types/infractions';
 
 /**
  * Module de gestion des amendes
@@ -41,6 +47,7 @@ export default function FinesPage() {
   const [viewingFine, setViewingFine] = useState<Fine | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedInfraction, setSelectedInfraction] = useState<Infraction | null>(null);
   const [formData, setFormData] = useState<Partial<Fine>>({
     citizen_name: '',
     citizen_id: '',
@@ -52,6 +59,22 @@ export default function FinesPage() {
   });
 
   const { fines, isLoading, error, addFine, updateFine, deleteFine } = useSupabaseFines();
+  const { currentLevel, fineMultiplier, config: defconConfig } = useDefcon({ agencyId: 'sasp' });
+
+  // Auto-fill when infraction is selected
+  useEffect(() => {
+    if (selectedInfraction) {
+      const baseAmount = selectedInfraction.base_fine || 0;
+      const multipliedAmount = Math.round(baseAmount * fineMultiplier);
+      setFormData(prev => ({
+        ...prev,
+        violation: selectedInfraction.name,
+        amount: multipliedAmount,
+        infraction_id: selectedInfraction.id,
+        defcon_multiplier: fineMultiplier,
+      }));
+    }
+  }, [selectedInfraction, fineMultiplier]);
 
   const filteredFines = fines.filter((fine) => {
     const matchesSearch =
@@ -73,6 +96,7 @@ export default function FinesPage() {
   // Handlers
   const handleCreate = () => {
     setEditingFine(null);
+    setSelectedInfraction(null);
     setFormData({
       citizen_name: '',
       citizen_id: '',
@@ -91,6 +115,7 @@ export default function FinesPage() {
 
   const handleEdit = (fine: Fine) => {
     setEditingFine(fine);
+    setSelectedInfraction(null); // Reset infraction selector when editing
     setFormData(fine);
     setShowModal(true);
   };
@@ -402,14 +427,48 @@ export default function FinesPage() {
                 </div>
               </div>
 
+              {/* DEFCON Indicator */}
+              {fineMultiplier > 1 && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3">
+                  <div className="p-2 bg-red-500/20 rounded-lg">
+                    <Zap className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-red-400 font-medium text-sm">DEFCON {currentLevel} actif</p>
+                    <p className="text-red-300/70 text-xs">
+                      Multiplicateur d'amende: x{fineMultiplier}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Infraction Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Infraction *
+                  <div className="flex items-center gap-2">
+                    <Scale className="w-4 h-4" />
+                    Sélectionner une infraction (Livret Pénal)
+                  </div>
+                </label>
+                <InfractionSelector
+                  value={selectedInfraction}
+                  onChange={setSelectedInfraction}
+                  placeholder="Rechercher dans le Livret Pénal..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Sélectionnez une infraction pour auto-remplir les champs ci-dessous
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Infraction / Description *
                 </label>
                 <textarea
                   value={formData.violation}
                   onChange={(e) => setFormData({ ...formData, violation: e.target.value })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 h-24 resize-none"
+                  placeholder="Description de l'infraction..."
                   required
                 />
               </div>
@@ -417,12 +476,17 @@ export default function FinesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   Montant ($) *
+                  {selectedInfraction && fineMultiplier > 1 && (
+                    <span className="ml-2 text-xs text-yellow-500">
+                      (base: ${selectedInfraction.base_fine} × {fineMultiplier} = ${formData.amount})
+                    </span>
+                  )}
                 </label>
                 <input
                   type="number"
                   min="0"
                   value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-dark-300 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   required
                 />

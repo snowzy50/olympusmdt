@@ -82,6 +82,12 @@ const saspModules: NavItem[] = [
   { name: 'Bracelets électroniques', icon: Radio, href: '/dashboard/ankle-monitors', badge: null },
 ];
 
+// Section Legal (accessible a SASP et DOJ)
+const legalSection: NavItem[] = [
+  { name: 'Livret Pénal', icon: Scale, href: '/dashboard/legal/penal-code', badge: null },
+  { name: 'Gun Control', icon: Target, href: '/dashboard/legal/gun-control', badge: null },
+];
+
 // Nouveaux modules SAMC
 const samcModules: NavItem[] = [
   { name: 'Dossiers médicaux', icon: Stethoscope, href: '/dashboard/medical-records', badge: null },
@@ -287,8 +293,22 @@ const Sidebar: React.FC = () => {
                 {currentAgency === 'dynasty8' && 'Modules Immobilier'}
               </p>
             )}
-            <ul className="space-y-1">
+            <ul className="space-y-1 mb-6">
               {agencyModules.map(renderNavItem)}
+            </ul>
+          </>
+        )}
+
+        {/* Section Legal (SASP et DOJ uniquement) */}
+        {(currentAgency === 'sasp' || currentAgency === 'doj') && (
+          <>
+            {!isCollapsed && (
+              <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Références Légales
+              </p>
+            )}
+            <ul className="space-y-1">
+              {legalSection.map(renderNavItem)}
             </ul>
           </>
         )}

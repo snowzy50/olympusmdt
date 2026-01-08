@@ -18,6 +18,7 @@ interface UseEventsOptions {
     end: string;
   };
   agencyId?: string; // Option pour override l'agence depuis l'URL
+  userId?: string; // ID utilisateur pour created_by
 }
 
 /**
@@ -30,7 +31,7 @@ function getAgencyFromPath(pathname: string): string | null {
 }
 
 export function useEvents(options: UseEventsOptions = {}) {
-  const { autoConnect = true, dateRange, agencyId: agencyIdOverride } = options;
+  const { autoConnect = true, dateRange, agencyId: agencyIdOverride, userId } = options;
   const pathname = usePathname();
   const agencyId = agencyIdOverride || getAgencyFromPath(pathname);
 
@@ -87,7 +88,7 @@ export function useEvents(options: UseEventsOptions = {}) {
           ...eventData,
           id: eventsRealtimeService.generateEventId(),
           agency_id: agencyId,
-          created_by: 'current-user', // TODO: Remplacer par l'ID utilisateur réel
+          created_by: userId || `anonymous-${Date.now()}`,
         });
 
         return newEvent;
@@ -97,7 +98,7 @@ export function useEvents(options: UseEventsOptions = {}) {
         throw error;
       }
     },
-    [agencyId]
+    [agencyId, userId]
   );
 
   /**

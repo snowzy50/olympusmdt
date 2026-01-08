@@ -13,6 +13,7 @@ import { dispatchRealtimeService, type DispatchCall } from '@/services/dispatchR
 interface UseDispatchCallsOptions {
   autoConnect?: boolean;
   agencyId?: string;
+  userId?: string;
 }
 
 /**
@@ -24,7 +25,7 @@ function getAgencyFromPath(pathname: string): string | null {
 }
 
 export function useDispatchCalls(options: UseDispatchCallsOptions = {}) {
-  const { autoConnect = true, agencyId: agencyIdOverride } = options;
+  const { autoConnect = true, agencyId: agencyIdOverride, userId } = options;
   const pathname = usePathname();
   const agencyId = agencyIdOverride || getAgencyFromPath(pathname);
 
@@ -71,7 +72,7 @@ export function useDispatchCalls(options: UseDispatchCallsOptions = {}) {
           ...callData,
           id: dispatchRealtimeService.generateCallId(),
           agency_id: agencyId,
-          created_by: 'current-user', // TODO: Remplacer par l'ID utilisateur réel
+          created_by: userId || `anonymous-${Date.now()}`,
         });
 
         return newCall;
@@ -81,7 +82,7 @@ export function useDispatchCalls(options: UseDispatchCallsOptions = {}) {
         throw error;
       }
     },
-    [agencyId]
+    [agencyId, userId]
   );
 
   /**

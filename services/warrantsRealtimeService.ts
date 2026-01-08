@@ -11,14 +11,18 @@ export interface Warrant {
     id: string;
     agency_id?: string;
     citizen_id?: string;
-    number: string;
+    number?: string;
+    warrant_number?: string;
     suspect_name: string;
     reason: string;
     status: 'active' | 'executed' | 'cancelled' | 'expired';
     issued_at: string;
+    issued_date?: string;
     expires_at?: string;
+    expiry_date?: string;
     agent_id?: string;
-    issued_by_name: string;
+    issued_by_name?: string;
+    issued_by_id?: string;
     notes?: string;
     created_at?: string;
     updated_at?: string;
@@ -112,12 +116,70 @@ class WarrantsRealtimeService {
     }
 
     async createWarrant(warrant: Omit<Warrant, 'id' | 'created_at' | 'updated_at'>): Promise<Warrant> {
+        console.log('[WarrantsRealtime] Création mandat avec données brutes:', JSON.stringify(warrant, null, 2));
+
+        // Mapper les champs pour correspondre au schéma de la base de données
+        const dbWarrant: Record<string, any> = {
+            suspect_name: warrant.suspect_name,
+            reason: warrant.reason,
+            status: warrant.status || 'active',
+            notes: warrant.notes,
+            agency_id: warrant.agency_id,
+        };
+
+        // Gérer le numéro de mandat (number -> warrant_number)
+        if (warrant.number) {
+            dbWarrant.warrant_number = warrant.number;
+        } else if (warrant.warrant_number) {
+            dbWarrant.warrant_number = warrant.warrant_number;
+        } else {
+            // Générer un numéro automatique
+            dbWarrant.warrant_number = `MA-${Date.now()}`;
+        }
+
+        // Gérer issued_by (nom ou id)
+        if (warrant.issued_by_name) {
+            dbWarrant.issued_by_name = warrant.issued_by_name;
+        }
+        if (warrant.issued_by_id) {
+            dbWarrant.issued_by_id = warrant.issued_by_id;
+        }
+
+        // Gérer les dates (issued_at -> issued_date)
+        if (warrant.issued_at) {
+            dbWarrant.issued_date = warrant.issued_at;
+        } else if (warrant.issued_date) {
+            dbWarrant.issued_date = warrant.issued_date;
+        } else {
+            dbWarrant.issued_date = new Date().toISOString();
+        }
+
+        // Gérer expiry (expires_at -> expiry_date)
+        if (warrant.expires_at) {
+            dbWarrant.expiry_date = warrant.expires_at;
+        } else if (warrant.expiry_date) {
+            dbWarrant.expiry_date = warrant.expiry_date;
+        }
+
+        console.log('[WarrantsRealtime] Données mappées pour DB:', JSON.stringify(dbWarrant, null, 2));
+
         const { data, error } = await this.supabase
             .from('warrants')
-            .insert([warrant])
+            .insert([dbWarrant])
             .select()
             .single();
-        if (error) throw error;
+
+        if (error) {
+            console.error('[WarrantsRealtime] Erreur Supabase:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
+            throw new Error(`${error.message}${error.hint ? ` (${error.hint})` : ''}`);
+        }
+
+        console.log('[WarrantsRealtime] ✅ Mandat créé:', data);
         return data as Warrant;
     }
 

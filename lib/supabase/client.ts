@@ -270,6 +270,8 @@ export type Database = {
           date: string;
           status: 'stored' | 'evidence' | 'destroyed' | 'returned';
           case_number: string | null;
+          weapon_id: string | null;
+          weapon_category: 'A' | 'B' | 'C' | 'D' | null;
           created_at: string;
           updated_at: string;
         };
@@ -294,6 +296,8 @@ export type Database = {
           due_date: string;
           status: 'unpaid' | 'paid' | 'overdue' | 'cancelled';
           payment_date: string | null;
+          infraction_id: string | null;
+          defcon_multiplier: number;
           created_at: string;
           updated_at: string;
         };
@@ -303,6 +307,78 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Database['public']['Tables']['fines']['Insert']>;
+      };
+      // ============================================
+      // SYSTEME DEFCON, LIVRET PENAL, GUN CONTROL
+      // ============================================
+      defcon_status: {
+        Row: {
+          id: string;
+          agency_id: string;
+          level: 1 | 2 | 3 | 4 | 5;
+          description: string | null;
+          duration_hours: number | null;
+          started_at: string;
+          ends_at: string | null;
+          activated_by: string;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['defcon_status']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['defcon_status']['Insert']>;
+      };
+      infractions: {
+        Row: {
+          id: string;
+          category: 'contravention' | 'delit_mineur' | 'delit_majeur' | 'crime';
+          name: string;
+          description: string | null;
+          base_fine: number | null;
+          fine_formula: string | null;
+          gav_duration: number | null;
+          notes: string | null;
+          penalties: string[] | null;
+          requires_prosecutor: boolean;
+          requires_tribunal: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['infractions']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['infractions']['Insert']>;
+      };
+      weapons_registry: {
+        Row: {
+          id: string;
+          category: 'A' | 'B' | 'C' | 'D';
+          name: string;
+          description: string | null;
+          free_possession: boolean;
+          carry_prohibited: boolean;
+          possession_prohibited: boolean;
+          requires_permit: boolean;
+          requires_declaration: boolean;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['weapons_registry']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['weapons_registry']['Insert']>;
       };
       // ============================================
       // NOUVELLES TABLES MÉDICALES - SAMC
@@ -620,3 +696,16 @@ export type OnDutyScheduleUpdate = Database['public']['Tables']['on_duty_schedul
 export type PPACertificate = Database['public']['Tables']['ppa_certificates']['Row'];
 export type PPACertificateInsert = Database['public']['Tables']['ppa_certificates']['Insert'];
 export type PPACertificateUpdate = Database['public']['Tables']['ppa_certificates']['Update'];
+
+// Types pour DEFCON, Livret Penal, Gun Control
+export type DbDefconStatus = Database['public']['Tables']['defcon_status']['Row'];
+export type DbDefconStatusInsert = Database['public']['Tables']['defcon_status']['Insert'];
+export type DbDefconStatusUpdate = Database['public']['Tables']['defcon_status']['Update'];
+
+export type DbInfraction = Database['public']['Tables']['infractions']['Row'];
+export type DbInfractionInsert = Database['public']['Tables']['infractions']['Insert'];
+export type DbInfractionUpdate = Database['public']['Tables']['infractions']['Update'];
+
+export type DbWeapon = Database['public']['Tables']['weapons_registry']['Row'];
+export type DbWeaponInsert = Database['public']['Tables']['weapons_registry']['Insert'];
+export type DbWeaponUpdate = Database['public']['Tables']['weapons_registry']['Update'];

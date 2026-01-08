@@ -26,6 +26,7 @@ import { EventsWidget } from './widgets/EventsWidget';
 import { DispatchWidget } from './widgets/DispatchWidget';
 import { StatsCard } from './widgets/StatsCard';
 import { ActivityFeed } from './widgets/ActivityFeed';
+import { DefconWidget } from '@/components/defcon/DefconWidget';
 
 interface DashboardOverviewProps {
   agencyId: string;
@@ -101,6 +102,15 @@ export function DashboardOverview({ agencyId, agencyName }: DashboardOverviewPro
             <Zap className="w-3 h-3 text-yellow-400" />
             <span className="text-xs text-gray-300">Temps réel actif</span>
           </div>
+        </div>
+
+        {/* DEFCON Widget */}
+        <div className="mt-6">
+          <DefconWidget
+            agencyId={agencyId}
+            showDetails={true}
+            className="max-w-lg"
+          />
         </div>
       </motion.div>
 
