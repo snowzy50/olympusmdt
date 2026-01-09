@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import MainLayout from '@/components/layout/MainLayout';
+import { MainLayout } from '@/components/layout/MainLayout';
 import ShiftCard from '@/components/planning/ShiftCard';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Users, Clock, CalendarDays } from 'lucide-react';
 import { useState } from 'react';

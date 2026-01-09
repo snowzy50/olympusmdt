@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import MainLayout from '@/components/layout/MainLayout';
+import { MainLayout } from '@/components/layout/MainLayout';
 import ReportCard from '@/components/reports/ReportCard';
 import { Search, Filter, Plus, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';

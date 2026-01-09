@@ -9,7 +9,7 @@ interface MainLayoutProps {
   children: ReactNode;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
+export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden bg-dark-950">

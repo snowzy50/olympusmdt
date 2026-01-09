@@ -119,15 +119,16 @@ class WarrantsRealtimeService {
         console.log('[WarrantsRealtime] Création mandat avec données brutes:', JSON.stringify(warrant, null, 2));
 
         // Mapper les champs pour correspondre au schéma de la base de données
+        // Le schéma utilise: number, issued_at, expires_at, issued_by_name
         const dbWarrant: Record<string, any> = {
             suspect_name: warrant.suspect_name,
             reason: warrant.reason,
             status: warrant.status || 'active',
-            notes: warrant.notes,
-            agency_id: warrant.agency_id,
+            notes: warrant.notes || null,
+            agency_id: warrant.agency_id || null,
         };
 
-        // Gérer le numéro de mandat (number -> warrant_number)
+        // Gérer le numéro de mandat (la colonne s'appelle warrant_number)
         if (warrant.number) {
             dbWarrant.warrant_number = warrant.number;
         } else if (warrant.warrant_number) {
@@ -137,15 +138,10 @@ class WarrantsRealtimeService {
             dbWarrant.warrant_number = `MA-${Date.now()}`;
         }
 
-        // Gérer issued_by (nom ou id)
-        if (warrant.issued_by_name) {
-            dbWarrant.issued_by_name = warrant.issued_by_name;
-        }
-        if (warrant.issued_by_id) {
-            dbWarrant.issued_by_id = warrant.issued_by_id;
-        }
+        // Gérer issued_by_name (requis)
+        dbWarrant.issued_by_name = warrant.issued_by_name || 'Inconnu';
 
-        // Gérer les dates (issued_at -> issued_date)
+        // Gérer les dates (la colonne s'appelle issued_date)
         if (warrant.issued_at) {
             dbWarrant.issued_date = warrant.issued_at;
         } else if (warrant.issued_date) {
@@ -154,7 +150,7 @@ class WarrantsRealtimeService {
             dbWarrant.issued_date = new Date().toISOString();
         }
 
-        // Gérer expiry (expires_at -> expiry_date)
+        // Gérer expiry (la colonne s'appelle expiry_date)
         if (warrant.expires_at) {
             dbWarrant.expiry_date = warrant.expires_at;
         } else if (warrant.expiry_date) {

@@ -8,13 +8,17 @@
 
 export const dynamic = 'force-dynamic';
 
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { Scale, ArrowLeft, BookOpen, Shield } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PenalCodeList } from '@/components/legal/PenalCodeList';
 import { DefconWidget } from '@/components/defcon/DefconWidget';
+import { DefconModal } from '@/components/defcon/DefconModal';
+import { useDefcon } from '@/hooks/useDefcon';
 import { getAgencyById } from '@/config/agencies';
+import type { DefconLevel } from '@/types/defcon';
 
 export default function PenalCodePage() {
   const { data: session } = useSession();
@@ -22,6 +26,15 @@ export default function PenalCodePage() {
   const router = useRouter();
   const agencyId = params.agencyId as string;
   const agency = getAgencyById(agencyId);
+
+  const [showDefconModal, setShowDefconModal] = useState(false);
+  const { currentLevel, setLevel } = useDefcon({ agencyId });
+
+  const handleDefconChange = async (level: DefconLevel, notes?: string, durationHours?: number) => {
+    const username = session?.user?.name || 'Inconnu';
+    await setLevel(level, username, { notes, durationHours });
+    setShowDefconModal(false);
+  };
 
   if (!agency) {
     return (
@@ -73,7 +86,12 @@ export default function PenalCodePage() {
 
           {/* DEFCON Widget */}
           <div className="mt-4">
-            <DefconWidget agencyId={agencyId} className="max-w-md" />
+            <DefconWidget
+              agencyId={agencyId}
+              className="max-w-md cursor-pointer"
+              onClick={() => setShowDefconModal(true)}
+              showDetails
+            />
           </div>
         </div>
 
@@ -82,6 +100,15 @@ export default function PenalCodePage() {
           <PenalCodeList className="h-full" />
         </div>
       </div>
+
+      {/* DEFCON Modal */}
+      {showDefconModal && (
+        <DefconModal
+          currentLevel={currentLevel}
+          onClose={() => setShowDefconModal(false)}
+          onConfirm={handleDefconChange}
+        />
+      )}
     </MainLayout>
   );
 }

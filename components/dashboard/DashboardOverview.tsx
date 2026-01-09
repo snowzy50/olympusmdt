@@ -6,8 +6,9 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import {
   Calendar,
   Radio,
@@ -22,11 +23,14 @@ import {
 } from 'lucide-react';
 import { useEvents } from '@/hooks/useEvents';
 import { useDispatchCalls } from '@/hooks/useDispatchCalls';
+import { useDefcon } from '@/hooks/useDefcon';
 import { EventsWidget } from './widgets/EventsWidget';
 import { DispatchWidget } from './widgets/DispatchWidget';
 import { StatsCard } from './widgets/StatsCard';
 import { ActivityFeed } from './widgets/ActivityFeed';
 import { DefconWidget } from '@/components/defcon/DefconWidget';
+import { DefconModal } from '@/components/defcon/DefconModal';
+import type { DefconLevel } from '@/types/defcon';
 
 interface DashboardOverviewProps {
   agencyId: string;
@@ -42,8 +46,17 @@ const AGENCY_COLORS = {
 };
 
 export function DashboardOverview({ agencyId, agencyName }: DashboardOverviewProps) {
+  const { data: session } = useSession();
   const { events, isConnected: eventsConnected, getStats: getEventStats } = useEvents();
   const { calls, isConnected: dispatchConnected, getStats: getDispatchStats, getActiveCalls } = useDispatchCalls({ agencyId });
+  const { currentLevel, setLevel } = useDefcon({ agencyId });
+  const [showDefconModal, setShowDefconModal] = useState(false);
+
+  const handleDefconChange = async (level: DefconLevel, notes?: string, durationHours?: number) => {
+    const username = session?.user?.name || 'Inconnu';
+    await setLevel(level, username, { notes, durationHours });
+    setShowDefconModal(false);
+  };
 
   const colors = AGENCY_COLORS[agencyId as keyof typeof AGENCY_COLORS] || AGENCY_COLORS.sasp;
   const eventStats = getEventStats();
@@ -109,7 +122,8 @@ export function DashboardOverview({ agencyId, agencyName }: DashboardOverviewPro
           <DefconWidget
             agencyId={agencyId}
             showDetails={true}
-            className="max-w-lg"
+            className="max-w-lg cursor-pointer"
+            onClick={() => setShowDefconModal(true)}
           />
         </div>
       </motion.div>
@@ -229,6 +243,15 @@ export function DashboardOverview({ agencyId, agencyName }: DashboardOverviewPro
           </div>
         </button>
       </motion.div>
+
+      {/* DEFCON Modal */}
+      {showDefconModal && (
+        <DefconModal
+          currentLevel={currentLevel}
+          onClose={() => setShowDefconModal(false)}
+          onConfirm={handleDefconChange}
+        />
+      )}
     </div>
   );
 }
